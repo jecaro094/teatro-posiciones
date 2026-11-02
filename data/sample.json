@@ -1,0 +1,20 @@
+{
+  "play": "Obra de ejemplo",
+  "cast": [
+    { "number": 1, "name": "Actor 1" },
+    { "number": 2, "name": "Actriz 2" },
+    { "number": 3, "name": "Actor 3" }
+  ],
+  "scenes": [
+    {
+      "id": "a1e1",
+      "title": "Acto 1 · Escena 1",
+      "notes": "",
+      "positions": [
+        { "number": 1, "x": 25, "y": 40 },
+        { "number": 2, "x": 50, "y": 60 },
+        { "number": 3, "x": 75, "y": 40 }
+      ]
+    }
+  ]
+}

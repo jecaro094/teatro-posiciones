@@ -1,0 +1,28 @@
+:root {
+  --bg: #f4f1ea;
+  --fg: #1d1b18;
+  --stage: #e3d9c6;
+  --accent: #8a1c2b;
+  --token-bg: #8a1c2b;
+  --token-fg: #fff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14110f;
+    --fg: #efe9dd;
+    --stage: #2a2420;
+    --accent: #d9a441;
+    --token-bg: #d9a441;
+    --token-fg: #14110f;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: system-ui, sans-serif; }
+.topbar { display: flex; gap: .5rem; align-items: center; padding: .75rem 1rem; flex-wrap: wrap; }
+.topbar h1 { font-size: 1.1rem; margin: 0; flex: 1; }
+main { padding: 0 1rem 1rem; }
+#stage { position: relative; aspect-ratio: 4 / 3; background: var(--stage); border-radius: 8px; }
+.token { position: absolute; width: 2.5rem; height: 2.5rem; margin: -1.25rem 0 0 -1.25rem;
+  border-radius: 50%; background: var(--token-bg); color: var(--token-fg);
+  display: grid; place-items: center; font-weight: 700; touch-action: none; }
+button, select { min-height: 44px; font: inherit; }

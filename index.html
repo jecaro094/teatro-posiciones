@@ -4,13 +4,35 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Teatro Posiciones</title>
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#7d1424">
+  <!-- Estilo mínimo en línea: la pantalla de carga sale con el tema aunque el CSS aún no haya llegado -->
+  <style>
+    html { background: #f0e9dc; }
+    @media (prefers-color-scheme: dark) { html { background: #110c16; } }
+    #splash { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; text-align: center;
+      font-family: "Palatino Linotype", Palatino, Georgia, serif; color: #f4dcb0; pointer-events: none; }
+    #splash .c { position: absolute; top: 0; bottom: 0; width: 50.5%; transition: transform .7s ease;
+      background: repeating-linear-gradient(90deg, rgb(0 0 0 / .28) 0 6px, transparent 6px 22px), linear-gradient(#7d1424, #4e0b17); }
+    #splash .l { left: 0; border-right: 3px solid #d4ad57; } #splash .r { right: 0; border-left: 3px solid #d4ad57; }
+    #splash p { position: relative; margin: 0; padding: 0 1.5rem; font-size: 1.15rem; letter-spacing: .08em; }
+    #splash small { display: block; margin-top: .6rem; font-size: .8rem; opacity: 0; transition: opacity .5s; }
+    #splash small.show { opacity: .85; }
+    #splash.done { pointer-events: none; }
+    #splash.done .l { transform: translateX(-101%); } #splash.done .r { transform: translateX(101%); }
+    #splash.done p { opacity: 0; transition: opacity .3s; }
+  </style>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  <div id="splash" role="status" aria-live="polite">
+    <div class="c l"></div><div class="c r"></div>
+    <p>Abriendo el telón…<small id="splash-slow">Está tardando más de lo normal. Si no carga, recarga la página.</small></p>
+  </div>
   <header class="topbar">
     <h1 id="play-title">Teatro Posiciones</h1>
     <select id="scene-select" aria-label="Escena"></select>
-    <button id="admin-toggle" type="button">Modo admin</button>
+    <button id="admin-toggle" type="button" hidden>Modo admin</button>
     <button id="reset" type="button" hidden>Restablecer</button>
   </header>
 
@@ -39,6 +61,11 @@
     <section id="scene-notes" aria-label="Notas de la escena"></section>
   </main>
 
+  <script>
+    // Si la carga se alarga o el JS falla (navegador antiguo, red), la pantalla lo dice en vez de quedarse muda.
+    setTimeout(function () { var m = document.getElementById('splash-slow'); if (m) m.className = 'show'; }, 6000);
+    window.addEventListener('error', function () { var m = document.getElementById('splash-slow'); if (m) m.className = 'show'; });
+  </script>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

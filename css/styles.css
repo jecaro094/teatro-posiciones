@@ -152,3 +152,7 @@ main { max-width: 40rem; margin: 0 auto; padding: 0 1rem 2rem; }
 #scene-tools button.danger { margin-left: auto; border-color: var(--danger); color: var(--danger); }
 #scene-tools input:focus, #scene-tools textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 body.admin #scene-notes { display: none; }
+
+#stage .msg button { margin-top: .9rem; padding: 0 1.2rem; border-radius: 10px; border: 1px solid var(--accent);
+  background: transparent; color: var(--accent); cursor: pointer; font-family: var(--serif); }
+@media (prefers-reduced-motion: reduce) { #splash .c { transition: none; } }

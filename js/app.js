@@ -220,7 +220,19 @@ async function checkUpdates() {
   } catch { /* sin red o pausado: se reintenta en el siguiente ciclo */ }
 }
 
+// Abre las cortinas de la pantalla de carga y la quita del DOM.
+function hideSplash() {
+  const el = $('splash');
+  if (!el) return;
+  el.classList.add('done');
+  setTimeout(() => el.remove(), 900);
+}
+
 async function init() {
+  try { await start(); } finally { hideSplash(); }
+}
+
+async function start() {
   await initAdmin();
   try {
     if (isRemote) version = await getVersion(readToken()).catch(() => undefined);
@@ -232,6 +244,11 @@ async function init() {
     msg.textContent = err instanceof AccessError
       ? 'Necesitas el enlace de acceso del elenco. Pídeselo a quien gestiona la obra.'
       : 'No se pudo cargar. Inténtalo de nuevo en un momento.';
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.textContent = 'Reintentar';
+    retry.addEventListener('click', () => location.reload());
+    msg.append(document.createElement('br'), retry);
     $('stage').replaceChildren(msg);
     return;
   }

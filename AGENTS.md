@@ -6,7 +6,7 @@ Cada persona tiene un número asignado; cada escena tiene un plano de escenario 
 
 ## Reglas de producto
 - **Elenco (solo lectura):** con el enlace elige escena y ve el plano. Toca un círculo → nombre.
-- **Admin (único que edita):** gestiona elenco (número/nombre), escenas (crear/duplicar/borrar) y arrastra círculos.
+- **Admin (único que edita):** gestiona elenco (número/nombre), escenas (crear/renombrar/reordenar/borrar) y arrastra círculos.
 - Plano: rectángulo con fondo arriba y público abajo, círculos numerados, posiciones en % (x,y).
 - Opcional: notas por escena, exportar a imagen/PDF.
 
@@ -21,12 +21,22 @@ HTML + CSS + JS (módulos ES) sin dependencias ni build. Mobile-first, botones �
 - `docs/` — notas de diseño
 
 ## Decisiones y límites
-- Despliegue previsto: **Artifact de Claude** (opción 1). Los datos compartidos necesitan backend; mantener `storage.js` como única capa de persistencia para poder migrar a Firebase/Supabase.
-- La seguridad de edición no puede depender solo del cliente: la contraseña/permiso admin debe validarse en el backend.
+- Despliegue: **GitHub Pages** (web estática) + **Supabase** (datos). Ver `docs/despliegue.md`.
+- `storage.js` es la única capa de persistencia (Supabase por RPC con token; sin `SUPABASE_URL`, `localStorage`/`sample.json`).
+- La seguridad de edición se valida en el servidor: funciones SQL `SECURITY DEFINER` que comprueban el sha256 del token
+  (`docs/supabase.sql`). Las tablas no son accesibles directamente. Acceso por enlace: `?v=` (elenco, lectura) y `?k=` (admin).
+- Nunca commitear tokens en claro ni claves `secret`/`service_role`. `js/config.js` solo lleva URL y clave publishable.
+- El elenco se actualiza solo (polling de `get_version` cada 20 s); el admin no, para no pisar ediciones.
 - Mantenerlo simple: no añadir frameworks sin necesidad.
 
+## Interfaz
+- Tema Addams (gótico elegante), claro y oscuro vía variables CSS. Plano: cortinas (fondo), tablado y foso de butacas (público).
+- Admin: círculos arrastrables, elenco editable en tarjetas, panel plegable «Escenas y copias» (título, notas, crear,
+  reordenar, borrar y backups en JSON descargable/restaurable).
+
 ## Pendiente (TODO)
-Selector de escenas, lista de elenco, notas, arrastrar y soltar, CRUD de admin, persistencia compartida, autenticación admin.
+Duplicar escena, exportar a imagen/PDF, ajustes móviles menores (círculos de 44 px, márgenes seguros iPhone,
+dos columnas en escritorio), prueba manual en navegador/móvil real.
 
 ## Tipos de círculo
 Cada persona del elenco tiene `type`: `ancentros` (amarillo, por defecto si falta) o `addams` (morado). Se edita en modo admin desde la lista del elenco. Colores en `css/styles.css` (`--ancentros-*`, `--addams-*`).

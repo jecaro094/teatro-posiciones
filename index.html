@@ -11,9 +11,11 @@
     <h1 id="play-title">Teatro Posiciones</h1>
     <select id="scene-select" aria-label="Escena"></select>
     <button id="admin-toggle" type="button">Modo admin</button>
+    <button id="reset" type="button" hidden>Restablecer</button>
   </header>
 
   <main>
+    <p id="admin-help" hidden>Arrastra los círculos para moverlos. Edita número, nombre, personaje y tipo (Ancentros amarillo / Addams morado) en la lista; el botón «En escena/Fuera» la mete o saca de esta escena y ✕ la elimina del elenco.</p>
     <section id="stage" aria-label="Plano del escenario"></section>
     <section id="cast-list" aria-label="Elenco"></section>
     <section id="scene-notes" aria-label="Notas de la escena"></section>

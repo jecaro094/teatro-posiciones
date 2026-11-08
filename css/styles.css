@@ -26,3 +26,39 @@ main { padding: 0 1rem 1rem; }
   border-radius: 50%; background: var(--token-bg); color: var(--token-fg);
   display: grid; place-items: center; font-weight: 700; touch-action: none; }
 button, select { min-height: 44px; font: inherit; }
+.token { transition: left .5s ease, top .5s ease; }
+#stage .label { position: absolute; left: 0; right: 0; text-align: center; font-size: .7rem;
+  letter-spacing: .15em; text-transform: uppercase; opacity: .5; pointer-events: none; }
+#stage .back { top: .4rem; }
+#stage .front { bottom: .4rem; }
+#cast-list ul { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: .4rem; }
+#cast-list li { display: flex; align-items: center; gap: .75rem; padding: .5rem .75rem;
+  background: var(--stage); border-radius: 8px; }
+#cast-list li.off { opacity: .45; }
+#cast-list .num { width: 2rem; height: 2rem; border-radius: 50%; background: var(--token-bg);
+  color: var(--token-fg); display: grid; place-items: center; font-weight: 700; flex: none; }
+#cast-list .who { flex: 1; display: grid; }
+#cast-list small { opacity: .7; }
+#cast-list em { font-size: .8rem; font-style: normal; opacity: .8; }
+#scene-notes { margin-top: 1rem; font-style: italic; }
+.token.editable { cursor: grab; outline: 2px dashed var(--fg); outline-offset: 2px; }
+.token.dragging { transition: none; cursor: grabbing; z-index: 2; }
+#admin-help { font-size: .85rem; margin: 0 0 .5rem; opacity: .8; }
+body.admin .topbar { border-bottom: 3px solid var(--accent); }
+#cast-list li.editing { flex-wrap: wrap; }
+#cast-list li.editing .who { flex: 1 1 10rem; gap: .25rem; }
+#cast-list input { min-height: 44px; font: inherit; width: 100%; padding: 0 .5rem; border-radius: 6px;
+  border: 1px solid var(--fg); background: var(--bg); color: var(--fg); }
+#cast-list input.f-num { width: 4rem; text-align: center; font-weight: 700; }
+#cast-list li.editing button { padding: 0 .75rem; }
+#add-person { margin-top: .5rem; width: 100%; }
+
+/* Tipos de círculo: ancentros (amarillo) y addams (morado) */
+:root { --ancentros-bg: #e0a800; --ancentros-fg: #1d1b18; --addams-bg: #6f3fb0; --addams-fg: #fff; }
+@media (prefers-color-scheme: dark) {
+  :root { --ancentros-bg: #d9a441; --ancentros-fg: #14110f; --addams-bg: #a77be0; --addams-fg: #14110f; }
+}
+.token, #cast-list .num { background: var(--ancentros-bg); color: var(--ancentros-fg); }
+.token.type-addams, #cast-list .num.type-addams { background: var(--addams-bg); color: var(--addams-fg); }
+#cast-list select { min-height: 44px; border-radius: 6px; border: 1px solid var(--fg);
+  background: var(--bg); color: var(--fg); padding: 0 .5rem; }

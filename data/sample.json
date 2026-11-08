@@ -1,19 +1,155 @@
 {
-  "play": "Obra de ejemplo",
+  "play": "El Faro de las Mil Mentiras",
   "cast": [
-    { "number": 1, "name": "Actor 1" },
-    { "number": 2, "name": "Actriz 2" },
-    { "number": 3, "name": "Actor 3" }
+    {
+      "number": 1,
+      "name": "Marta Quiroga",
+      "role": "Doña Elvira, la farera",
+      "type": "ancentros"
+    },
+    {
+      "number": 2,
+      "name": "Ignacio Beltrán",
+      "role": "Capitán Ulises Roca",
+      "type": "ancentros"
+    },
+    {
+      "number": 3,
+      "name": "Lucía Montenegro",
+      "role": "Violeta, la forastera",
+      "type": "addams"
+    },
+    {
+      "number": 4,
+      "name": "Tomás Arévalo",
+      "role": "Don Cleofás, el alcalde",
+      "type": "addams"
+    },
+    {
+      "number": 5,
+      "name": "Pilar Sandoval",
+      "role": "Chiquita, la pescadera",
+      "type": "ancentros"
+    },
+    {
+      "number": 6,
+      "name": "Rubén Ocaña",
+      "role": "El Gaviota, marinero",
+      "type": "addams"
+    }
   ],
   "scenes": [
     {
       "id": "a1e1",
-      "title": "Acto 1 · Escena 1",
-      "notes": "",
+      "title": "Acto 1 · La llegada de Violeta",
+      "notes": "Amanece. Violeta entra por la derecha con la maleta; Elvira barre el porche sin mirarla.",
       "positions": [
-        { "number": 1, "x": 25, "y": 40 },
-        { "number": 2, "x": 50, "y": 60 },
-        { "number": 3, "x": 75, "y": 40 }
+        {
+          "number": 1,
+          "x": 20,
+          "y": 25
+        },
+        {
+          "number": 3,
+          "x": 85,
+          "y": 70
+        },
+        {
+          "number": 5,
+          "x": 55,
+          "y": 50
+        }
+      ]
+    },
+    {
+      "id": "a1e2",
+      "title": "Acto 1 · La tertulia del alcalde",
+      "notes": "Todos alrededor de la mesa central. Don Cleofás preside desde el fondo.",
+      "positions": [
+        {
+          "number": 4,
+          "x": 50,
+          "y": 20
+        },
+        {
+          "number": 1,
+          "x": 30,
+          "y": 45
+        },
+        {
+          "number": 2,
+          "x": 70,
+          "y": 45
+        },
+        {
+          "number": 5,
+          "x": 35,
+          "y": 70
+        },
+        {
+          "number": 6,
+          "x": 65,
+          "y": 70
+        }
+      ]
+    },
+    {
+      "id": "a2e1",
+      "title": "Acto 2 · Tormenta sobre el faro",
+      "notes": "Luz azul y trueno. Ulises sube a la escalera; Violeta queda sola en proscenio.",
+      "positions": [
+        {
+          "number": 2,
+          "x": 80,
+          "y": 20
+        },
+        {
+          "number": 3,
+          "x": 50,
+          "y": 85
+        },
+        {
+          "number": 6,
+          "x": 15,
+          "y": 55
+        }
+      ]
+    },
+    {
+      "id": "a2e2",
+      "title": "Acto 2 · La confesión de Elvira",
+      "notes": "Elvira en el centro; los demás forman un semicírculo y no se mueven hasta el apagón.",
+      "positions": [
+        {
+          "number": 1,
+          "x": 50,
+          "y": 50
+        },
+        {
+          "number": 2,
+          "x": 25,
+          "y": 30
+        },
+        {
+          "number": 3,
+          "x": 75,
+          "y": 30
+        },
+        {
+          "number": 4,
+          "x": 20,
+          "y": 65
+        },
+        {
+          "number": 5,
+          "x": 80,
+          "y": 65
+        },
+        {
+          "number": 6,
+          "x": 50,
+          "y": 82
+        }
       ]
     }
   ]

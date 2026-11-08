@@ -27,3 +27,6 @@ HTML + CSS + JS (módulos ES) sin dependencias ni build. Mobile-first, botones �
 
 ## Pendiente (TODO)
 Selector de escenas, lista de elenco, notas, arrastrar y soltar, CRUD de admin, persistencia compartida, autenticación admin.
+
+## Tipos de círculo
+Cada persona del elenco tiene `type`: `ancentros` (amarillo, por defecto si falta) o `addams` (morado). Se edita en modo admin desde la lista del elenco. Colores en `css/styles.css` (`--ancentros-*`, `--addams-*`).

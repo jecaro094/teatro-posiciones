@@ -104,7 +104,7 @@ function renderScene() {
   renderCast();
   renderTools(scene);
   $('scene-notes').textContent = scene.notes || '';
-  $('scene-select').value = sceneId;
+  fillScenes();
 }
 
 // ---- Panel admin: escenas y copias ----
@@ -113,6 +113,8 @@ function renderTools(scene) {
   tools.hidden = !isAdmin();
   if (!isAdmin()) return;
   const i = data.scenes.indexOf(scene);
+  $('scene-act').value = scene.act;
+  $('scene-num').value = scene.scene;
   $('scene-title').value = scene.title;
   $('scene-notes-edit').value = scene.notes || '';
   $('scene-up').disabled = i <= 0;
@@ -129,8 +131,13 @@ function newSceneId() {
   return id;
 }
 
-function addScene() {
-  const scene = { id: newSceneId(), title: `Escena ${data.scenes.length + 1}`, notes: '', positions: [] };
+// Nueva escena (siguiente número del acto actual) o nueva posición dentro de la escena actual.
+function addScene(samePlace = false) {
+  const cur = currentScene();
+  const inAct = data.scenes.filter(s => s.act === cur.act);
+  const scene = { id: newSceneId(), act: cur.act, notes: '', positions: [],
+    scene: samePlace ? cur.scene : Math.max(...inAct.map(s => s.scene)) + 1 };
+  scene.title = `Posición ${data.scenes.filter(s => s.act === scene.act && s.scene === scene.scene).length + 1}`;
   data.scenes.push(scene);
   sceneId = scene.id;
   fillScenes();
@@ -190,7 +197,7 @@ async function restoreBackup(file) {
   try { parsed = JSON.parse(await file.text()); } catch { return alert('El archivo no es un JSON válido.'); }
   if (!validBackup(parsed)) return alert('El archivo no parece una copia de esta app.');
   if (!confirm(`Se reemplazará todo el elenco y las escenas actuales por la copia (${parsed.cast.length} personas, ${parsed.scenes.length} escenas). ¿Continuar?`)) return;
-  data = parsed;
+  data = normalize(parsed);
   sceneId = data.scenes[0].id;
   $('play-title').textContent = data.play || '';
   fillScenes();
@@ -202,16 +209,41 @@ async function restoreBackup(file) {
 // El admin no se actualiza solo (no se le pisa lo que edita).
 const POLL_MS = 20000;
 let version;
+// Tres desplegables en cascada: acto → escena → título (cada entrada es una posición).
+const byNum = (a, b) => a - b;
 function fillScenes() {
-  const select = $('scene-select');
-  select.replaceChildren(...data.scenes.map(s => new Option(s.title, s.id)));
+  const cur = currentScene();
+  const inAct = data.scenes.filter(s => s.act === cur.act);
+  const inScene = inAct.filter(s => s.scene === cur.scene);
+  $('act-select').replaceChildren(...[...new Set(data.scenes.map(s => s.act))].sort(byNum).map(a => new Option(`Acto ${a}`, a)));
+  $('sc-select').replaceChildren(...[...new Set(inAct.map(s => s.scene))].sort(byNum).map(n => new Option(`Escena ${n}`, n)));
+  $('scene-select').replaceChildren(...inScene.map(s => new Option(s.title, s.id)));
+  $('act-select').value = cur.act;
+  $('sc-select').value = cur.scene;
+  $('scene-select').value = cur.id;
+}
+
+// Los datos antiguos solo tienen título («Acto 1 · …»): saca acto y escena de ahí y numera las escenas dentro de cada acto.
+function normalize(d) {
+  let lastAct = 1;
+  const counters = {};
+  for (const s of d.scenes) {
+    if (!Number.isInteger(s.act) || s.act < 1) {
+      const m = /^\s*acto\s+(\d+)\s*[·:\-–—]\s*(.*)$/i.exec(s.title);
+      if (m) { s.act = +m[1]; s.title = m[2].trim() || s.title; } else s.act = lastAct;
+    }
+    lastAct = s.act;
+    if (!Number.isInteger(s.scene) || s.scene < 1) { counters[s.act] = (counters[s.act] || 0) + 1; s.scene = counters[s.act]; }
+    else counters[s.act] = Math.max(counters[s.act] || 0, s.scene);
+  }
+  return d;
 }
 async function checkUpdates() {
   if (!isRemote || isAdmin() || document.hidden || !data) return;
   try {
     const v = await getVersion(readToken());
     if (version !== undefined && v !== version) {
-      data = await loadData(readToken());
+      data = normalize(await loadData(readToken()));
       if (!data.scenes.some(s => s.id === sceneId)) sceneId = data.scenes[0].id;
       fillScenes();
       renderScene();
@@ -236,7 +268,7 @@ async function start() {
   await initAdmin();
   try {
     if (isRemote) version = await getVersion(readToken()).catch(() => undefined);
-    data = await loadData(readToken());
+    data = normalize(await loadData(readToken()));
   } catch (err) {
     $('admin-toggle').hidden = true;
     const msg = document.createElement('div');
@@ -255,15 +287,31 @@ async function start() {
   $('play-title').textContent = data.play;
   document.title = data.play;
   const select = $('scene-select');
-  fillScenes();
   sceneId = data.scenes[0].id;
+  fillScenes();
   select.addEventListener('change', () => { sceneId = select.value; renderScene(); });
+  $('act-select').addEventListener('change', e => {
+    const first = data.scenes.filter(s => s.act === +e.target.value).sort((a, b) => a.scene - b.scene)[0];
+    sceneId = first.id; renderScene();
+  });
+  $('sc-select').addEventListener('change', e => {
+    sceneId = data.scenes.find(s => s.act === currentScene().act && s.scene === +e.target.value).id; renderScene();
+  });
+  for (const [id, key] of [['scene-act', 'act'], ['scene-num', 'scene']]) {
+    $(id).addEventListener('change', e => {
+      const n = parseInt(e.target.value, 10);
+      if (!Number.isInteger(n) || n < 1) { alert('Debe ser un entero positivo.'); return renderScene(); }
+      currentScene()[key] = n;
+      persist(); renderScene();
+    });
+  }
   $('scene-title').addEventListener('change', e => {
     currentScene().title = e.target.value.trim() || 'Sin título';
     fillScenes(); persist(); renderScene();
   });
   $('scene-notes-edit').addEventListener('change', e => { currentScene().notes = e.target.value.trim(); persist(); renderScene(); });
-  $('scene-new').addEventListener('click', addScene);
+  $('scene-new').addEventListener('click', () => addScene(false));
+  $('scene-pos').addEventListener('click', () => addScene(true));
   $('scene-up').addEventListener('click', () => moveScene(-1));
   $('scene-down').addEventListener('click', () => moveScene(1));
   $('scene-del').addEventListener('click', deleteScene);
@@ -278,7 +326,7 @@ async function start() {
   $('reset').addEventListener('click', async () => {
     if (!confirm('¿Descartar todos los cambios y volver al ejemplo?')) return;
     resetData();
-    data = await loadData(readToken());
+    data = normalize(await loadData(readToken()));
     sceneId = data.scenes[0].id;
     renderScene();
   });

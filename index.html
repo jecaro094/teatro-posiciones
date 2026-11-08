@@ -8,8 +8,8 @@
   <meta name="theme-color" content="#7d1424">
   <!-- Estilo mínimo en línea: la pantalla de carga sale con el tema aunque el CSS aún no haya llegado -->
   <style>
-    html { background: #f0e9dc; }
-    @media (prefers-color-scheme: dark) { html { background: #110c16; } }
+    html { background: #e9e4da; }
+    @media (prefers-color-scheme: dark) { html { background: #0b080e; } }
     #splash { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; text-align: center;
       font-family: "Palatino Linotype", Palatino, Georgia, serif; color: #f4dcb0; pointer-events: none; }
     #splash .c { position: absolute; top: 0; bottom: 0; width: 50.5%; transition: transform .7s ease;
@@ -27,11 +27,15 @@
 <body>
   <div id="splash" role="status" aria-live="polite">
     <div class="c l"></div><div class="c r"></div>
-    <p>Abriendo el telón…<small id="splash-slow">Está tardando más de lo normal. Si no carga, recarga la página.</small></p>
+    <p>Se abre el telón…<small id="splash-slow">Morticia está tardando más de lo normal. Si no carga, recarga la página.</small></p>
   </div>
   <header class="topbar">
     <h1 id="play-title">Teatro Posiciones</h1>
-    <select id="scene-select" aria-label="Escena"></select>
+    <div class="pickers">
+      <select id="act-select" aria-label="Acto"></select>
+      <select id="sc-select" aria-label="Escena"></select>
+      <select id="scene-select" aria-label="Título de la escena"></select>
+    </div>
     <button id="admin-toggle" type="button" hidden>Modo admin</button>
     <button id="reset" type="button" hidden>Restablecer</button>
   </header>
@@ -41,10 +45,15 @@
     <details id="scene-tools" hidden>
       <summary>Escenas y copias</summary>
       <div class="tools">
-        <label>Título de la escena <input id="scene-title" type="text" maxlength="80"></label>
+        <div class="nums">
+          <label>Acto <input id="scene-act" type="number" min="1" inputmode="numeric"></label>
+          <label>Escena <input id="scene-num" type="number" min="1" inputmode="numeric"></label>
+        </div>
+        <label>Título <input id="scene-title" type="text" maxlength="80"></label>
         <label>Notas <textarea id="scene-notes-edit" rows="3" maxlength="1000"></textarea></label>
         <div class="row">
-          <button type="button" id="scene-new">+ Nueva escena</button>
+          <button type="button" id="scene-new">+ Escena</button>
+          <button type="button" id="scene-pos">+ Posición</button>
           <button type="button" id="scene-up" aria-label="Subir escena">↑</button>
           <button type="button" id="scene-down" aria-label="Bajar escena">↓</button>
           <button type="button" id="scene-del" class="danger">Borrar</button>

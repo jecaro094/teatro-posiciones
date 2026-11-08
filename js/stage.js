@@ -4,7 +4,13 @@
 export function renderStage(container, data, sceneId, editable, onChange = () => {}) {
   const scene = data.scenes.find(s => s.id === sceneId);
   if (!container.querySelector('.label')) {
-    container.innerHTML = '<span class="label back">Fondo</span><span class="label front">Público</span>';
+    container.innerHTML = '<div class="zone curtain"></div><div class="zone floor"></div><div class="zone pit"></div>'
+      + '<span class="label back">Fondo</span><span class="label front">Público</span>';
+    // Toca fuera de un círculo: oculta el nombre mostrado
+    container.addEventListener('click', e => {
+      if (e.target.closest('.token')) return;
+      container.querySelectorAll('.token.show').forEach(t => t.classList.remove('show'));
+    });
   }
   const existing = new Map([...container.querySelectorAll('.token')].map(el => [el.dataset.n, el]));
   const present = new Set();
@@ -25,6 +31,13 @@ export function renderStage(container, data, sceneId, editable, onChange = () =>
     const person = data.cast.find(c => c.number === pos.number);
     el.classList.toggle('type-addams', person?.type === 'addams');
     el.title = person ? `${person.name} · ${person.role ?? ''}` : '';
+    el.dataset.name = person?.name ?? '';
+    // Solo lectura: tocar un círculo muestra el nombre
+    el.onclick = editable ? null : () => {
+      const was = el.classList.contains('show');
+      container.querySelectorAll('.token.show').forEach(t => t.classList.remove('show'));
+      el.classList.toggle('show', !was);
+    };
     el.classList.remove('gone');
     requestAnimationFrame(() => { el.style.left = pos.x + '%'; el.style.top = pos.y + '%'; });
     el.classList.toggle('editable', !!editable);

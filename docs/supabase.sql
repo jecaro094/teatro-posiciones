@@ -44,6 +44,17 @@ begin
 end;
 $$;
 
+-- Versión (updated_at) del estado: permite al elenco comprobar si hay cambios sin descargar todo.
+create or replace function get_version(p_token text) returns text
+language plpgsql security definer set search_path = public as $$
+begin
+  if token_role(p_token) is null then
+    raise exception 'token no valido' using errcode = '42501';
+  end if;
+  return (select updated_at::text from app_state where id = 1);
+end;
+$$;
+
 create or replace function save_state(p_token text, p_data jsonb) returns void
 language plpgsql security definer set search_path = public as $$
 begin
@@ -58,7 +69,7 @@ $$;
 -- token_role es interna: nadie la llama desde fuera.
 revoke execute on function token_role(text) from public, anon;
 grant usage on schema public to anon;
-grant execute on function is_admin(text), get_state(text), save_state(text, jsonb) to anon;
+grant execute on function is_admin(text), get_state(text), get_version(text), save_state(text, jsonb) to anon;
 
 -- Altas (solo hashes). Para revocar/cambiar: delete from admin_tokens where role = '...'; e inserta otro.
 insert into admin_tokens (token_hash, role) values ('ced3b639dbd741b53fd4abb41354542bfc408a63d4fd7a0452d4de2e316ef69f', 'admin') on conflict (token_hash) do nothing;

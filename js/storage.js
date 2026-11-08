@@ -48,6 +48,13 @@ export async function verifyToken(token) {
   } catch { return false; }
 }
 
+// Versión del estado remoto (para detectar cambios sin descargarlo). null si no hay datos aún.
+export async function getVersion(token) {
+  const res = await rpc('get_version', { p_token: token });
+  if (!res.ok) throw new Error('No se pudo comprobar');
+  return res.json();
+}
+
 export function resetData() {
   try { localStorage.removeItem(KEY); } catch { /* ignorar */ }
 }

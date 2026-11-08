@@ -16,6 +16,24 @@
 
   <main>
     <p id="admin-help" hidden>Arrastra los círculos para moverlos. Edita número, nombre, personaje y tipo (Ancentros amarillo / Addams morado) en la lista; el botón «En escena/Fuera» la mete o saca de esta escena y ✕ la elimina del elenco.</p>
+    <details id="scene-tools" hidden>
+      <summary>Escenas y copias</summary>
+      <div class="tools">
+        <label>Título de la escena <input id="scene-title" type="text" maxlength="80"></label>
+        <label>Notas <textarea id="scene-notes-edit" rows="3" maxlength="1000"></textarea></label>
+        <div class="row">
+          <button type="button" id="scene-new">+ Nueva escena</button>
+          <button type="button" id="scene-up" aria-label="Subir escena">↑</button>
+          <button type="button" id="scene-down" aria-label="Bajar escena">↓</button>
+          <button type="button" id="scene-del" class="danger">Borrar</button>
+        </div>
+        <div class="row">
+          <button type="button" id="backup-save">Descargar copia</button>
+          <button type="button" id="backup-load">Restaurar copia</button>
+          <input type="file" id="backup-file" accept="application/json,.json" hidden>
+        </div>
+      </div>
+    </details>
     <section id="stage" aria-label="Plano del escenario"></section>
     <section id="cast-list" aria-label="Elenco"></section>
     <section id="scene-notes" aria-label="Notas de la escena"></section>

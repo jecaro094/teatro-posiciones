@@ -64,7 +64,7 @@ button, select { min-height: 44px; }
 
 /* Cabecera */
 .topbar { display: grid; grid-template-columns: 1fr auto auto; gap: .5rem .5rem; align-items: center;
-  max-width: 40rem; margin: 0 auto; padding: .9rem 1rem .6rem; position: relative; z-index: 1; }
+  max-width: 72rem; margin: 0 auto; padding: .9rem .5rem .6rem; position: relative; z-index: 1; }
 .topbar h1 { grid-column: 1; margin: 0; font-family: var(--display); font-size: 1.45rem; font-weight: 700;
   letter-spacing: .03em; color: var(--accent); text-shadow: 1px 1px 0 var(--gold); }
 .topbar h1::after { content: ""; display: block; width: 7rem; height: .8rem; margin-top: .3rem;
@@ -82,10 +82,10 @@ body.admin .topbar h1::after { content: "Modo admin"; width: auto; height: auto;
   padding: .1rem .55rem; border-radius: 99px; background: var(--accent); color: var(--bg);
   font: 600 .7rem system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
 
-main { max-width: 40rem; margin: 0 auto; padding: 0 1rem 2rem; }
+main { max-width: 72rem; margin: 0 auto; padding: 0 .5rem 2rem; }
 
 /* Escenario: cortinas (fondo) · tablado · foso/platea (público) */
-#stage { position: relative; aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden;
+#stage { touch-action: pan-y; position: relative; aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden;
   border: 3px double var(--gold); box-shadow: var(--shadow); isolation: isolate; }
 #stage .zone { position: absolute; left: 0; right: 0; }
 #stage .curtain { top: 0; height: 13%;
@@ -185,3 +185,24 @@ body.admin #scene-notes { display: none; }
 #stage .msg button { margin-top: .9rem; padding: 0 1.2rem; border-radius: 10px; border: 1px solid var(--accent);
   background: transparent; color: var(--accent); cursor: pointer; font-family: var(--serif); }
 @media (prefers-reduced-motion: reduce) { #splash .c { transition: none; } }
+
+/* Móvil: el escenario ocupa todo el ancho de la pantalla */
+@media (max-width: 640px) {
+  #stage { margin-inline: -.5rem; border-radius: 0; border-left: 0; border-right: 0; }
+}
+
+/* Navegación entre posiciones de la misma escena */
+#pos-nav { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: .6rem; }
+#pos-nav button { min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--fg); font-size: 1.5rem; line-height: 1; cursor: pointer; }
+#pos-nav button:disabled { opacity: .35; cursor: default; }
+#pos-count { min-width: 3.5rem; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+#pos-nav[hidden] { display: none; }
+
+/* Admin: ajuste de simetría */
+#sym-tools { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; margin-top: .6rem; }
+#sym-tools[hidden] { display: none; }
+#sym-tools button { min-height: 44px; padding: 0 .9rem; border-radius: 10px; border: 1px solid var(--accent);
+  background: transparent; color: var(--accent); cursor: pointer; }
+#sym-tools button:disabled { opacity: .35; cursor: default; }
+#sym-msg { color: var(--muted); font-size: .9rem; }

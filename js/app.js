@@ -102,6 +102,10 @@ function renderScene() {
   $('reset').hidden = !isAdmin() || isRemote;
   $('admin-help').hidden = !isAdmin();
   renderCast();
+  renderPosNav();
+  $('sym-tools').hidden = !isAdmin();
+  $('sym-undo').disabled = !symUndo.has(sceneId);
+  if (!isAdmin()) $('sym-msg').textContent = '';
   renderTools(scene);
   $('scene-notes').textContent = scene.notes || '';
   fillScenes();
@@ -120,6 +124,92 @@ function renderTools(scene) {
   $('scene-up').disabled = i <= 0;
   $('scene-down').disabled = i >= data.scenes.length - 1;
   $('scene-del').disabled = data.scenes.length <= 1;
+}
+
+// Posiciones de la misma escena (mismo acto y número de escena), en orden.
+function siblings() { const c = currentScene(); return data.scenes.filter(s => s.act === c.act && s.scene === c.scene); }
+
+function stepPosition(delta) {
+  const sib = siblings();
+  const j = sib.indexOf(currentScene()) + delta;
+  if (j < 0 || j >= sib.length) return;
+  sceneId = sib[j].id;
+  renderScene();
+}
+
+function renderPosNav() {
+  const sib = siblings();
+  const i = sib.indexOf(currentScene());
+  $('pos-nav').hidden = sib.length < 2;
+  $('pos-count').textContent = `${i + 1}/${sib.length}`;
+  $('pos-prev').disabled = i <= 0;
+  $('pos-next').disabled = i >= sib.length - 1;
+}
+
+// Gesto de deslizar sobre el escenario (solo modo elenco): izquierda = siguiente, derecha = anterior.
+function initSwipe() {
+  const stage = $('stage');
+  let start = null;
+  stage.addEventListener('pointerdown', e => { start = isAdmin() || e.pointerType === 'mouse' ? null : { x: e.clientX, y: e.clientY }; });
+  stage.addEventListener('pointercancel', () => { start = null; });
+  stage.addEventListener('pointerup', e => {
+    if (!start) return;
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
+    start = null;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    stepPosition(dx < 0 ? 1 : -1);
+  });
+}
+
+// ---- Simetría (admin): empareja cada círculo con su espejo respecto a x = 50 % y los corrige ----
+const SYM_TOL = 15;        // distancia máxima (en % del plano) entre un círculo y la posición espejo de su pareja
+const SYM_CENTER = 3;      // los círculos a menos de esto del eje se centran
+const symUndo = new Map(); // sceneId → posiciones previas (un nivel)
+
+function symmetrize(positions) {
+  const pairs = [];
+  for (let i = 0; i < positions.length; i++) for (let j = i + 1; j < positions.length; j++) {
+    const a = positions[i], b = positions[j];
+    if (Math.abs(a.x - 50) <= SYM_CENTER || Math.abs(b.x - 50) <= SYM_CENTER) continue;
+    if ((a.x < 50) === (b.x < 50)) continue; // deben estar en lados opuestos
+    const dist = Math.hypot((100 - a.x) - b.x, a.y - b.y);
+    if (dist <= SYM_TOL) pairs.push({ a, b, dist });
+  }
+  pairs.sort((p, q) => p.dist - q.dist);
+  const used = new Set();
+  let paired = 0, centered = 0;
+  const r = v => Math.round(v * 10) / 10;
+  for (const { a, b } of pairs) {
+    if (used.has(a) || used.has(b)) continue;
+    used.add(a); used.add(b);
+    const [l, rt] = a.x < b.x ? [a, b] : [b, a];
+    const half = (rt.x - l.x) / 2, y = r((l.y + rt.y) / 2);
+    l.x = r(50 - half); rt.x = r(50 + half); l.y = rt.y = y;
+    paired++;
+  }
+  for (const p of positions) if (!used.has(p) && Math.abs(p.x - 50) <= SYM_CENTER && p.x !== 50) { p.x = 50; centered++; }
+  return { paired, centered };
+}
+
+function applySymmetry() {
+  const scene = currentScene();
+  const before = JSON.stringify(scene.positions);
+  const { paired, centered } = symmetrize(scene.positions);
+  const changed = JSON.stringify(scene.positions) !== before;
+  if (changed) { symUndo.set(scene.id, before); persist(); }
+  renderScene();
+  $('sym-msg').textContent = `${paired} parejas ajustadas, ${centered} centradas${changed ? '' : ' (ya estaba simétrico)'}`;
+}
+
+function undoSymmetry() {
+  const scene = currentScene();
+  const prev = symUndo.get(scene.id);
+  if (!prev) return;
+  scene.positions = JSON.parse(prev);
+  symUndo.delete(scene.id);
+  persist();
+  renderScene();
+  $('sym-msg').textContent = 'Deshecho';
 }
 
 function currentScene() { return data.scenes.find(s => s.id === sceneId); }
@@ -316,6 +406,11 @@ async function start() {
   $('scene-up').addEventListener('click', () => moveScene(-1));
   $('scene-down').addEventListener('click', () => moveScene(1));
   $('scene-del').addEventListener('click', deleteScene);
+  $('pos-prev').addEventListener('click', () => stepPosition(-1));
+  $('pos-next').addEventListener('click', () => stepPosition(1));
+  $('sym-apply').addEventListener('click', applySymmetry);
+  $('sym-undo').addEventListener('click', undoSymmetry);
+  initSwipe();
   $('backup-save').addEventListener('click', downloadBackup);
   $('backup-load').addEventListener('click', () => $('backup-file').click());
   $('backup-file').addEventListener('change', e => {

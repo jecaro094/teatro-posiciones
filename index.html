@@ -66,6 +66,16 @@
       </div>
     </details>
     <section id="stage" aria-label="Plano del escenario"></section>
+    <nav id="pos-nav" aria-label="Posiciones de la escena">
+      <button id="pos-prev" type="button" aria-label="Posición anterior">‹</button>
+      <span id="pos-count" aria-live="polite"></span>
+      <button id="pos-next" type="button" aria-label="Posición siguiente">›</button>
+    </nav>
+    <div id="sym-tools" hidden>
+      <button id="sym-apply" type="button">Simetrizar</button>
+      <button id="sym-undo" type="button" disabled>Deshacer</button>
+      <span id="sym-msg" role="status"></span>
+    </div>
     <section id="cast-list" aria-label="Elenco"></section>
     <section id="scene-notes" aria-label="Notas de la escena"></section>
   </main>

@@ -2,40 +2,154 @@
   "play": "El Faro de las Mil Mentiras",
   "cast": [
     {
+      "number": "G",
+      "name": "Gómez",
+      "role": "",
+      "type": "addams"
+    },
+    {
+      "number": "Mo",
+      "name": "Morticia",
+      "role": "",
+      "type": "addams"
+    },
+    {
+      "number": "X",
+      "name": "Miércoles",
+      "role": "",
+      "type": "addams"
+    },
+    {
+      "number": "F",
+      "name": "Fétido",
+      "role": "",
+      "type": "addams"
+    },
+    {
+      "number": "P",
+      "name": "Pubert",
+      "role": "",
+      "type": "addams"
+    },
+    {
+      "number": "Ab",
+      "name": "Abuela",
+      "role": "",
+      "type": "addams"
+    },
+    {
+      "number": "L",
+      "name": "Largo",
+      "role": "",
+      "type": "addams"
+    },
+    {
+      "number": "Ma",
+      "name": "Malcom",
+      "role": "",
+      "type": "addams"
+    },
+    {
+      "number": "A",
+      "name": "Alice",
+      "role": "",
+      "type": "addams"
+    },
+    {
+      "number": "Lu",
+      "name": "Lucas",
+      "role": "",
+      "type": "addams"
+    },
+    {
       "number": 1,
-      "name": "Marta Quiroga",
-      "role": "Doña Elvira, la farera",
+      "name": "Jesús",
+      "role": "",
       "type": "ancentros"
     },
     {
       "number": 2,
-      "name": "Ignacio Beltrán",
-      "role": "Capitán Ulises Roca",
+      "name": "Leo",
+      "role": "",
       "type": "ancentros"
     },
     {
       "number": 3,
-      "name": "Lucía Montenegro",
-      "role": "Violeta, la forastera",
-      "type": "addams"
+      "name": "Juan",
+      "role": "",
+      "type": "ancentros"
     },
     {
       "number": 4,
-      "name": "Tomás Arévalo",
-      "role": "Don Cleofás, el alcalde",
-      "type": "addams"
+      "name": "Julio",
+      "role": "",
+      "type": "ancentros"
     },
     {
       "number": 5,
-      "name": "Pilar Sandoval",
-      "role": "Chiquita, la pescadera",
+      "name": "Valeria",
+      "role": "",
       "type": "ancentros"
     },
     {
       "number": 6,
-      "name": "Rubén Ocaña",
-      "role": "El Gaviota, marinero",
-      "type": "addams"
+      "name": "Diana",
+      "role": "",
+      "type": "ancentros"
+    },
+    {
+      "number": 7,
+      "name": "Marta A.",
+      "role": "",
+      "type": "ancentros"
+    },
+    {
+      "number": 8,
+      "name": "Paula",
+      "role": "",
+      "type": "ancentros"
+    },
+    {
+      "number": 9,
+      "name": "María",
+      "role": "",
+      "type": "ancentros"
+    },
+    {
+      "number": 10,
+      "name": "Ana",
+      "role": "",
+      "type": "ancentros"
+    },
+    {
+      "number": 11,
+      "name": "Lorena",
+      "role": "",
+      "type": "ancentros"
+    },
+    {
+      "number": 12,
+      "name": "Marta M.",
+      "role": "",
+      "type": "ancentros"
+    },
+    {
+      "number": 13,
+      "name": "Carla",
+      "role": "",
+      "type": "ancentros"
+    },
+    {
+      "number": 14,
+      "name": "Nuria",
+      "role": "",
+      "type": "ancentros"
+    },
+    {
+      "number": 15,
+      "name": "Mª Ángeles",
+      "role": "",
+      "type": "ancentros"
     }
   ],
   "scenes": [
@@ -45,17 +159,17 @@
       "notes": "Amanece. Violeta entra por la derecha con la maleta; Elvira barre el porche sin mirarla.",
       "positions": [
         {
-          "number": 1,
+          "number": "G",
           "x": 20,
           "y": 25
         },
         {
-          "number": 3,
+          "number": "X",
           "x": 85,
           "y": 70
         },
         {
-          "number": 5,
+          "number": "Ab",
           "x": 55,
           "y": 50
         }
@@ -67,27 +181,27 @@
       "notes": "Todos alrededor de la mesa central. Don Cleofás preside desde el fondo.",
       "positions": [
         {
-          "number": 4,
+          "number": "F",
           "x": 50,
           "y": 20
         },
         {
-          "number": 1,
+          "number": "G",
           "x": 30,
           "y": 45
         },
         {
-          "number": 2,
+          "number": "Mo",
           "x": 70,
           "y": 45
         },
         {
-          "number": 5,
+          "number": "Ab",
           "x": 35,
           "y": 70
         },
         {
-          "number": 6,
+          "number": "L",
           "x": 65,
           "y": 70
         }
@@ -99,17 +213,17 @@
       "notes": "Luz azul y trueno. Ulises sube a la escalera; Violeta queda sola en proscenio.",
       "positions": [
         {
-          "number": 2,
+          "number": "Mo",
           "x": 80,
           "y": 20
         },
         {
-          "number": 3,
+          "number": "X",
           "x": 50,
           "y": 85
         },
         {
-          "number": 6,
+          "number": "L",
           "x": 15,
           "y": 55
         }
@@ -121,32 +235,32 @@
       "notes": "Elvira en el centro; los demás forman un semicírculo y no se mueven hasta el apagón.",
       "positions": [
         {
-          "number": 1,
+          "number": "G",
           "x": 50,
           "y": 50
         },
         {
-          "number": 2,
+          "number": "Mo",
           "x": 25,
           "y": 30
         },
         {
-          "number": 3,
+          "number": "X",
           "x": 75,
           "y": 30
         },
         {
-          "number": 4,
+          "number": "F",
           "x": 20,
           "y": 65
         },
         {
-          "number": 5,
+          "number": "Ab",
           "x": 80,
           "y": 65
         },
         {
-          "number": 6,
+          "number": "L",
           "x": 50,
           "y": 82
         }

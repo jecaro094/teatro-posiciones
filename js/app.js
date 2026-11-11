@@ -19,7 +19,7 @@ function renderCast() {
     li.className = here ? 'on' : 'off';
     if (isAdmin()) {
       li.classList.add('editing');
-      li.innerHTML = `<input class="f-num" type="number" min="1" inputmode="numeric" aria-label="Número">
+      li.innerHTML = `<input class="f-num" type="text" maxlength="3" aria-label="Código">
         <span class="who"><input class="f-name" placeholder="Nombre" aria-label="Nombre"><input class="f-role" placeholder="Personaje" aria-label="Personaje"></span>
         <select class="f-type" aria-label="Tipo"><option value="ancentros">Ancentros</option><option value="addams">Addams</option></select>
         <button type="button" class="f-toggle"></button><button type="button" class="f-del" aria-label="Eliminar">✕</button>`;
@@ -32,7 +32,7 @@ function renderCast() {
       li.querySelector('.f-toggle').addEventListener('click', () => togglePresence(c.number));
       li.querySelector('.f-name').addEventListener('change', e => { c.name = e.target.value.trim(); commit(); });
       li.querySelector('.f-role').addEventListener('change', e => { c.role = e.target.value.trim(); commit(); });
-      li.querySelector('.f-num').addEventListener('change', e => renumber(c, parseInt(e.target.value, 10)));
+      li.querySelector('.f-num').addEventListener('change', e => renumber(c, e.target.value.trim()));
       li.querySelector('.f-del').addEventListener('click', () => removePerson(c));
     } else {
       li.innerHTML = `<span class="num"></span><span class="who"><b></b><small></small></span><em></em>`;
@@ -62,23 +62,23 @@ function persist() {
 function commit() { persist(); renderScene(); }
 
 function addPerson() {
-  const number = Math.max(0, ...data.cast.map(c => c.number)) + 1;
+  const number = Math.max(0, ...data.cast.map(c => c.number).filter(Number.isInteger)) + 1;
   data.cast.push({ number, name: 'Nueva persona', role: '', type: 'ancentros' });
   commit();
 }
 
 function renumber(person, n) {
-  if (!Number.isInteger(n) || n < 1) { alert('El número debe ser un entero positivo.'); return renderCast(); }
-  if (data.cast.some(c => c !== person && c.number === n)) { alert(`El número ${n} ya está asignado.`); return renderCast(); }
+  if (/^\d+$/.test(n)) n = +n;
+  if (n === '' || n === 0) { alert('El código no puede estar vacío.'); return renderCast(); }
+  if (data.cast.some(c => c !== person && c.number === n)) { alert(`El código ${n} ya está asignado.`); return renderCast(); }
   const old = person.number;
   person.number = n;
   for (const sc of data.scenes) for (const p of sc.positions) if (p.number === old) p.number = n;
-  data.cast.sort((x, y) => x.number - y.number);
   commit();
 }
 
 function removePerson(person) {
-  if (!confirm(`¿Eliminar a ${person.name || 'esta persona'} (nº ${person.number}) del elenco y de todas las escenas?`)) return;
+  if (!confirm(`¿Eliminar a ${person.name || 'esta persona'} (${person.number}) del elenco y de todas las escenas?`)) return;
   data.cast = data.cast.filter(c => c !== person);
   for (const sc of data.scenes) sc.positions = sc.positions.filter(p => p.number !== person.number);
   commit();
@@ -183,11 +183,12 @@ function downloadBackup() {
 }
 
 // Comprueba la forma mínima de una copia antes de reemplazar los datos.
+const validCode = n => Number.isInteger(n) || (typeof n === 'string' && n.length > 0);
 function validBackup(d) {
   const ok = d && typeof d === 'object' && Array.isArray(d.cast) && Array.isArray(d.scenes) && d.scenes.length > 0
-    && d.cast.every(c => c && Number.isInteger(c.number) && typeof c.name === 'string')
+    && d.cast.every(c => c && validCode(c.number) && typeof c.name === 'string')
     && d.scenes.every(s => s && typeof s.id === 'string' && typeof s.title === 'string' && Array.isArray(s.positions)
-      && s.positions.every(p => p && Number.isInteger(p.number) && Number.isFinite(p.x) && Number.isFinite(p.y)));
+      && s.positions.every(p => p && validCode(p.number) && Number.isFinite(p.x) && Number.isFinite(p.y)));
   return !!ok && new Set(d.scenes.map(s => s.id)).size === d.scenes.length
     && new Set(d.cast.map(c => c.number)).size === d.cast.length;
 }

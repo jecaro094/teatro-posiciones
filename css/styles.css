@@ -211,23 +211,6 @@ body.admin #scene-notes { display: none; }
 #sym-tools button:disabled { opacity: .35; cursor: default; }
 #sym-msg { color: var(--muted); font-size: .9rem; }
 
-/* Móvil en horizontal: cabecera en una fila y plano a todo el ancho y el alto restante; la navegación de posiciones flota encima */
-@media (orientation: landscape) and (max-height: 520px) {
-  .topbar { grid-template-columns: auto 1fr auto auto; padding-top: .35rem; padding-bottom: .35rem; }
-  .topbar h1 { font-size: 1rem; grid-row: 1; }
-  body:not(.admin) .topbar h1::after { display: none; }
-  .pickers { grid-row: 1; grid-column: 2; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  #scene-select { grid-column: auto; }
-  #stage { margin-inline: -.5rem; border-radius: 0; border-left: 0; border-right: 0; aspect-ratio: auto;
-    height: calc(100vh - 3.7rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-    height: calc(100dvh - 3.7rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
-  #pos-nav { position: fixed; z-index: 10; margin: 0; gap: .4rem; padding: .1rem .4rem; border-radius: 99px;
-    right: calc(env(safe-area-inset-right) + .6rem); bottom: calc(env(safe-area-inset-bottom) + .5rem);
-    background: rgb(11 8 14 / .65); color: #efe8dc; }
-  #pos-nav button { background: transparent; border-color: transparent; color: #efe8dc; }
-  #pos-count { color: #efe8dc; }
-}
-
 /* Filtro del elenco: resaltar a una persona / atenuar el resto */
 .token { transition: left .5s ease, top .5s ease, opacity .2s, transform .2s; }
 .token.dim { opacity: .28; }
@@ -253,16 +236,6 @@ body.admin #scene-notes { display: none; }
   pointer-events: none; font: 700 clamp(1.1rem, 5vw, 2rem) var(--serif); letter-spacing: .06em; color: rgb(255 255 255 / .6);
   text-shadow: 0 0 10px rgb(0 0 0 / .7), 0 0 26px rgb(0 0 0 / .55); filter: blur(.7px); opacity: 0; transition: opacity .3s; }
 .stage-msg.show { opacity: 1; }
-@media (orientation: landscape) and (max-height: 520px) {
-  /* Horizontal: el filtro flota abajo a la izquierda y su panel se abre hacia arriba */
-  #filter-tools { position: fixed; z-index: 10; margin: 0; left: calc(env(safe-area-inset-left) + .6rem);
-    bottom: calc(env(safe-area-inset-bottom) + .5rem); background: rgb(11 8 14 / .65); border-color: transparent; border-radius: 99px; color: #efe8dc; }
-  #filter-tools.active { background: rgb(11 8 14 / .65); border-color: var(--gold); }
-  #filter-tools summary { color: #efe8dc; }
-  #filter-sum { color: #efe8dc; }
-  #filter-tools .tools { border-top: 0; position: absolute; left: 0; bottom: calc(100% + .4rem); width: min(80vw, 20rem); padding: .9rem;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; max-height: 60vh; overflow: auto; }
-}
 @media print { #filter-tools { display: none !important; } }
 
 /* Aviso breve al cambiar de escena o acto */

@@ -45,6 +45,13 @@
 
   <main>
     <p id="admin-help" hidden>Arrastra los círculos para moverlos. Edita número, nombre, personaje y tipo (Ancentros amarillo / Addams morado) en la lista; el botón «En escena/Fuera» la mete o saca de esta escena y ✕ la elimina del elenco.</p>
+    <details id="filter-tools" hidden>
+      <summary><span>Mi personaje</span><span id="filter-sum"></span></summary>
+      <div class="tools">
+        <label>¿Quién eres? <select id="f-person"></select></label>
+        <label class="chk"><input type="checkbox" id="f-only" checked> Saltar las posiciones donde no salgo</label>
+      </div>
+    </details>
     <details id="scene-tools" hidden>
       <summary>Escenas y copias</summary>
       <div class="tools">
@@ -86,7 +93,13 @@
       <span id="sym-msg" role="status"></span>
     </div>
     <section id="cast-list" aria-label="Elenco"></section>
+    <div id="export-tools">
+      <button id="pdf-current" type="button">PDF: esta posición</button>
+      <button id="pdf-all" type="button">PDF: toda la obra</button>
+    </div>
   </main>
+  <div id="nav-toast" role="status" aria-live="polite"></div>
+  <div id="print-area" aria-hidden="true"></div>
 
   <script>
     // Si la carga se alarga o el JS falla (navegador antiguo, red), la pantalla lo dice en vez de quedarse muda.

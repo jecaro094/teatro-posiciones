@@ -103,12 +103,14 @@ function renderScene() {
   $('admin-help').hidden = !isAdmin();
   renderCast();
   renderPosNav();
+  renderFilter();
   $('sym-tools').hidden = !isAdmin();
   $('sym-undo').disabled = !symUndo.has(sceneId);
   if (!isAdmin()) $('sym-msg').textContent = '';
   renderTools(scene);
   $('scene-notes').textContent = scene.notes || '';
   fillScenes();
+  syncLocation();
 }
 
 // ---- Panel admin: escenas y copias ----
@@ -131,21 +133,147 @@ function renderTools(scene) {
 // Posiciones de la misma escena (mismo acto y número de escena), en orden.
 function siblings() { const c = currentScene(); return data.scenes.filter(s => s.act === c.act && s.scene === c.scene); }
 
+// Todas las posiciones de la obra en orden (acto, escena y orden dentro de la escena).
+const ordered = () => [...data.scenes].sort((a, b) => a.act - b.act || a.scene - b.scene);
+
+// ---- Filtro del elenco (no se ofrece al admin): resalta a «mi personaje» y atenúa al resto; puede saltar las posiciones donde no salgo ----
+const FKEY = 'teatro:filter';
+const filter = { p: '', only: true };
+try { Object.assign(filter, JSON.parse(localStorage.getItem(FKEY) || '{}')); } catch { /* sin almacenamiento */ }
+const castOf = n => data.cast.find(c => String(c.number) === String(n));
+const hasFilter = () => !isAdmin() && !!filter.p;
+function posMatches(sc) {
+  if (!hasFilter() || !filter.only) return true;
+  return sc.positions.some(pos => String(pos.number) === filter.p);
+}
+const navList = () => ordered().filter(sc => sc.id === sceneId || posMatches(sc));
+
+let castSig = '';
+function renderFilter() {
+  const box = $('filter-tools');
+  box.hidden = isAdmin();
+  if (isAdmin()) { applyFilter(); return; }
+  const sig = data.cast.map(c => c.number + c.name).join('|');
+  if (sig !== castSig) {
+    castSig = sig;
+    $('f-person').replaceChildren(new Option('Nadie (ver todos)', ''), ...data.cast.map(c => new Option(`${c.number} · ${c.name}`, String(c.number))));
+    if (filter.p && !castOf(filter.p)) filter.p = '';
+  }
+  $('f-person').value = filter.p;
+  $('f-only').checked = filter.only;
+  $('filter-sum').textContent = filter.p ? castOf(filter.p).name : '';
+  box.classList.toggle('active', !!filter.p);
+  applyFilter();
+}
+function applyFilter() {
+  const on = hasFilter();
+  for (const el of $('stage').querySelectorAll('.token')) {
+    if (!on) { el.classList.remove('me', 'dim'); continue; }
+    const me = el.dataset.n === filter.p;
+    el.classList.toggle('me', me);
+    el.classList.toggle('dim', !me);
+  }
+  let msg = '';
+  const sc = currentScene();
+  if (on && !sc.positions.some(p => String(p.number) === filter.p)) msg = 'No sales en esta posición';
+  const stage = $('stage');
+  let el = stage.querySelector('.stage-msg');
+  if (!el && msg) { el = document.createElement('div'); el.className = 'stage-msg'; el.setAttribute('role', 'status'); stage.append(el); }
+  if (el) { if (msg) el.textContent = msg; el.classList.toggle('show', !!msg); }
+}
+function initFilter() {
+  const save = () => { try { localStorage.setItem(FKEY, JSON.stringify(filter)); } catch { /* ignorar */ } renderFilter(); renderPosNav(); };
+  $('f-person').addEventListener('change', e => { filter.p = e.target.value; save(); });
+  $('f-only').addEventListener('change', e => { filter.only = e.target.checked; save(); });
+}
+
+// Avanza por la lista global: al pasar de la última posición de una escena se entra en la siguiente (y de un acto al otro).
 function stepPosition(delta) {
-  const sib = siblings();
-  const j = sib.indexOf(currentScene()) + delta;
-  if (j < 0 || j >= sib.length) return;
-  sceneId = sib[j].id;
+  const all = navList();
+  const cur = currentScene();
+  const next = all[all.indexOf(cur) + delta];
+  if (!next) return;
+  sceneId = next.id;
   renderScene();
+  if (next.act !== cur.act || next.scene !== cur.scene) {
+    toast(`${label(`Acto ${next.act}`, actName(next.act))} · ${label(`Escena ${next.scene}`, sceneName(next.act, next.scene))}`);
+  }
+}
+
+let toastTimer;
+function toast(text) {
+  const el = $('nav-toast');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
 }
 
 function renderPosNav() {
   const sib = siblings();
-  const i = sib.indexOf(currentScene());
-  $('pos-nav').hidden = sib.length < 2;
-  $('pos-count').textContent = `${i + 1}/${sib.length}`;
-  $('pos-prev').disabled = i <= 0;
-  $('pos-next').disabled = i >= sib.length - 1;
+  const all = navList();
+  const g = all.indexOf(currentScene());
+  $('pos-nav').hidden = ordered().length < 2;
+  $('pos-count').textContent = `${sib.indexOf(currentScene()) + 1}/${sib.length}`;
+  $('pos-prev').disabled = g <= 0;
+  $('pos-next').disabled = g >= all.length - 1;
+}
+
+// ---- Dónde estoy: la posición actual va en el hash de la URL (#p=ID) y se recuerda; «atrás» vuelve a la anterior ----
+const LAST_KEY = 'teatro:last';
+let locationInit = false;
+function idFromHash() { const m = /^#p=(.+)$/.exec(location.hash); return m ? decodeURIComponent(m[1]) : null; }
+function initialSceneId() {
+  let id = idFromHash();
+  if (!id) { try { id = localStorage.getItem(LAST_KEY); } catch { /* sin almacenamiento */ } }
+  return data.scenes.some(s => s.id === id) ? id : data.scenes[0].id;
+}
+function syncLocation() {
+  const hash = '#p=' + encodeURIComponent(sceneId);
+  try { localStorage.setItem(LAST_KEY, sceneId); } catch { /* ignorar */ }
+  if (location.hash === hash) { locationInit = true; return; }
+  try { history[locationInit ? 'pushState' : 'replaceState'](null, '', hash); } catch { /* ignorar */ }
+  locationInit = true;
+}
+
+// ---- Exportar a PDF: se monta una hoja por posición (A4 apaisado) y se abre el diálogo de imprimir → «Guardar como PDF» ----
+function printPlay(all) {
+  const list = all ? [...data.scenes].sort((a, b) => a.act - b.act || a.scene - b.scene) : [currentScene()];
+  const area = $('print-area');
+  area.replaceChildren(...list.map(s => {
+    const page = document.createElement('section');
+    page.className = 'ppage';
+    const head = document.createElement('header');
+    const h = document.createElement('h2'); h.textContent = data.play;
+    const sub = document.createElement('p');
+    sub.textContent = `${label(`Acto ${s.act}`, actName(s.act))} · ${label(`Escena ${s.scene}`, sceneName(s.act, s.scene))} · ${s.title}`;
+    head.append(h, sub);
+    const body = document.createElement('div'); body.className = 'pbody';
+    const stage = document.createElement('div'); stage.className = 'pstage';
+    renderStage(stage, data, s.id, false);
+    const side = document.createElement('aside');
+    const ul = document.createElement('ul'); ul.className = 'plegend' + (s.positions.length > 7 ? ' two' : '');
+    for (const pos of s.positions) {
+      const c = data.cast.find(x => x.number === pos.number);
+      const li = document.createElement('li');
+      const n = document.createElement('span'); n.className = 'pnum' + (c?.type === 'addams' ? ' type-addams' : ''); n.textContent = pos.number;
+      const who = document.createElement('span'); who.textContent = c ? c.name : '';
+      if (c?.role) { const sm = document.createElement('small'); sm.textContent = ` · ${c.role}`; who.append(sm); }
+      li.append(n, who); ul.append(li);
+    }
+    side.append(ul);
+    if (s.notes) { const np = document.createElement('p'); np.className = 'pnotes'; np.textContent = s.notes; side.append(np); }
+    body.append(stage, side);
+    page.append(head, body);
+    return page;
+  }));
+  // Pestaña sin título mientras se imprime (así no sale en la cabecera del navegador); deja calcular el diseño antes
+  const prev = document.title;
+  setTimeout(() => {
+    document.title = ' ';
+    window.addEventListener('afterprint', () => { document.title = prev; }, { once: true });
+    window.print();
+  }, 100);
 }
 
 // Gesto de deslizar sobre el escenario (solo modo elenco): izquierda = siguiente, derecha = anterior.
@@ -387,7 +515,11 @@ async function start() {
   $('play-title').textContent = data.play;
   document.title = data.play;
   const select = $('scene-select');
-  sceneId = data.scenes[0].id;
+  sceneId = initialSceneId();
+  window.addEventListener('popstate', () => {
+    const id = idFromHash();
+    if (id && id !== sceneId && data.scenes.some(s => s.id === id)) { sceneId = id; renderScene(); }
+  });
   fillScenes();
   select.addEventListener('change', () => { sceneId = select.value; renderScene(); });
   $('act-select').addEventListener('change', e => {
@@ -431,6 +563,9 @@ async function start() {
   $('sym-apply').addEventListener('click', applySymmetry);
   $('sym-undo').addEventListener('click', undoSymmetry);
   initSwipe();
+  initFilter();
+  $('pdf-current').addEventListener('click', () => printPlay(false));
+  $('pdf-all').addEventListener('click', () => printPlay(true));
   $('backup-save').addEventListener('click', downloadBackup);
   $('backup-load').addEventListener('click', () => $('backup-file').click());
   $('backup-file').addEventListener('change', e => {

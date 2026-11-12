@@ -2,10 +2,16 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Teatro Posiciones</title>
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#7d1424">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Posiciones">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
   <!-- Estilo mínimo en línea: la pantalla de carga sale con el tema aunque el CSS aún no haya llegado -->
   <style>
     html { background: #e9e4da; }
@@ -22,6 +28,9 @@
     #splash.done .l { transform: translateX(-101%); } #splash.done .r { transform: translateX(101%); }
     #splash.done p { opacity: 0; transition: opacity .3s; }
   </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&display=swap">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -38,6 +47,8 @@
     </div>
     <button id="admin-toggle" type="button" hidden>Modo admin</button>
     <button id="reset" type="button" hidden>Restablecer</button>
+    <button id="immersive-btn" type="button" hidden aria-label="Pantalla completa">⛶</button>
+    <button id="notes-btn" type="button" hidden aria-label="Notas de la escena">📝</button>
   </header>
 
   <main>
@@ -49,11 +60,16 @@
           <label>Acto <input id="scene-act" type="number" min="1" inputmode="numeric"></label>
           <label>Escena <input id="scene-num" type="number" min="1" inputmode="numeric"></label>
         </div>
+        <div class="nums">
+          <label>Nombre del acto <input id="act-name" type="text" maxlength="60" placeholder="opcional"></label>
+          <label>Nombre de la escena <input id="scene-name" type="text" maxlength="60" placeholder="opcional"></label>
+        </div>
         <label>Título <input id="scene-title" type="text" maxlength="80"></label>
         <label>Notas <textarea id="scene-notes-edit" rows="3" maxlength="1000"></textarea></label>
         <div class="row">
           <button type="button" id="scene-new">+ Escena</button>
           <button type="button" id="scene-pos">+ Posición</button>
+          <button type="button" id="scene-copy">Copiar posición</button>
           <button type="button" id="scene-up" aria-label="Subir escena">↑</button>
           <button type="button" id="scene-down" aria-label="Bajar escena">↓</button>
           <button type="button" id="scene-del" class="danger">Borrar</button>
@@ -71,13 +87,13 @@
       <span id="pos-count" aria-live="polite"></span>
       <button id="pos-next" type="button" aria-label="Posición siguiente">›</button>
     </nav>
+    <section id="scene-notes" aria-label="Notas de la escena"></section>
     <div id="sym-tools" hidden>
       <button id="sym-apply" type="button">Simetrizar</button>
       <button id="sym-undo" type="button" disabled>Deshacer</button>
       <span id="sym-msg" role="status"></span>
     </div>
     <section id="cast-list" aria-label="Elenco"></section>
-    <section id="scene-notes" aria-label="Notas de la escena"></section>
   </main>
 
   <script>

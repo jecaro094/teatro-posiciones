@@ -21,7 +21,7 @@
   --shadow: 0 2px 10px rgb(22 17 27 / .25);
   --web: rgb(255 255 255 / .55);
   --serif: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-  --display: var(--serif);
+  --display: "Cinzel Decorative", "Palatino Linotype", Palatino, Georgia, serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -65,8 +65,8 @@ button, select { min-height: 44px; }
 /* Cabecera */
 .topbar { display: grid; grid-template-columns: 1fr auto auto; gap: .5rem .5rem; align-items: center;
   max-width: 72rem; margin: 0 auto; padding: .9rem .5rem .6rem; position: relative; z-index: 1; }
-.topbar h1 { grid-column: 1; margin: 0; font-family: var(--display); font-size: 1.45rem; font-weight: 700;
-  letter-spacing: .03em; color: var(--accent); text-shadow: 1px 1px 0 var(--gold); }
+.topbar h1 { grid-column: 1; margin: 0; font-family: var(--display); font-size: 1.45rem; font-weight: 700; line-height: 1.2;
+  letter-spacing: .04em; color: var(--accent); text-shadow: 1px 1px 0 var(--gold); }
 .topbar h1::after { content: ""; display: block; width: 7rem; height: .8rem; margin-top: .3rem;
   background: var(--gold); -webkit-mask: var(--ornament-svg) no-repeat left / contain; mask: var(--ornament-svg) no-repeat left / contain; }
 .pickers { grid-row: 2; grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
@@ -206,3 +206,40 @@ body.admin #scene-notes { display: none; }
   background: transparent; color: var(--accent); cursor: pointer; }
 #sym-tools button:disabled { opacity: .35; cursor: default; }
 #sym-msg { color: var(--muted); font-size: .9rem; }
+
+/* Botón de vista inmersiva (elenco) */
+#immersive-btn { grid-row: 1; grid-column: 3; }
+#notes-btn { display: none; }
+
+/* Vista inmersiva (elenco): solo el plano a pantalla completa; barra superpuesta que se oculta sola */
+body.immersive { background: #000; overflow: hidden; overscroll-behavior: none; }
+body.immersive::before, body.immersive::after { display: none; }
+body.immersive main { max-width: none; padding: 0; }
+body.immersive #cast-list, body.immersive #admin-help { display: none; }
+body.immersive .topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 20; max-width: none; margin: 0;
+  gap: .4rem; align-items: start;
+  padding: calc(env(safe-area-inset-top) + .4rem) calc(env(safe-area-inset-right) + .5rem) .4rem calc(env(safe-area-inset-left) + .5rem);
+  background: rgb(11 8 14 / .72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  color: #efe8dc; transition: opacity .25s, transform .25s; }
+body.immersive .topbar.ui-hidden { opacity: 0; transform: translateY(-100%); pointer-events: none; }
+body.immersive .topbar h1, body.immersive #admin-toggle, body.immersive #reset { display: none; }
+body.immersive .pickers { grid-row: 1; grid-column: 1; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35rem; }
+body.immersive #scene-select { grid-column: auto; }
+body.immersive .pickers select { font-size: .9rem; padding: 0 .4rem; text-overflow: ellipsis; }
+body.immersive .topbar button { color: #efe8dc; border-color: rgb(255 255 255 / .35); min-width: 44px; }
+body.immersive #immersive-btn { grid-row: 1; grid-column: 2; }
+body.immersive #notes-btn { display: block; grid-row: 1; grid-column: 3; }
+body.immersive #notes-btn[hidden] { display: none; }
+body.immersive #stage { position: fixed; inset: 0; margin: auto; z-index: 1; border: 0; border-radius: 0; box-shadow: none;
+  width: min(100vw, 133.33dvh); height: min(100dvh, 75vw); aspect-ratio: auto; }
+body.immersive #pos-nav { position: fixed; z-index: 10; left: 50%; transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom) + .5rem); margin: 0; gap: .4rem; padding: .15rem .4rem; border-radius: 99px;
+  background: rgb(11 8 14 / .6); color: #efe8dc; }
+body.immersive #pos-nav[hidden] { display: none; }
+body.immersive #pos-nav button { background: transparent; border-color: transparent; color: #efe8dc; }
+body.immersive #pos-count { color: #efe8dc; }
+body.immersive #scene-notes { display: none; position: fixed; z-index: 15; left: 0; right: 0; bottom: 0; margin: 0;
+  max-height: 45dvh; overflow: auto; white-space: pre-wrap;
+  padding: .9rem calc(env(safe-area-inset-right) + 1rem) calc(env(safe-area-inset-bottom) + 3.5rem) calc(env(safe-area-inset-left) + 1rem);
+  background: rgb(11 8 14 / .88); color: #efe8dc; border-top: 1px solid var(--gold); }
+body.immersive.notes-open #scene-notes:not(:empty) { display: block; }

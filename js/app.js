@@ -1,7 +1,7 @@
 // Punto de entrada: carga datos, pinta la escena elegida y gestiona el modo admin.
 import { loadData, saveData, resetData, getVersion, isRemote, AccessError } from './storage.js';
 import { renderStage } from './stage.js';
-import { isAdmin, toggleAdmin, initAdmin, getToken, readToken, canToggle } from './admin.js';
+import { isAdmin, toggleAdmin, initAdmin, getToken, readToken, getViewerToken, canToggle } from './admin.js';
 
 const $ = id => document.getElementById(id);
 let data;
@@ -97,6 +97,7 @@ function renderScene() {
   const scene = data.scenes.find(s => s.id === sceneId);
   renderStage($('stage'), data, sceneId, isAdmin(), () => { persist(); renderCast(); });
   document.body.classList.toggle('admin', isAdmin());
+  applyImmersive();
   $('admin-toggle').textContent = isAdmin() ? 'Salir de admin' : 'Modo admin';
   $('admin-toggle').hidden = !canToggle();
   $('reset').hidden = !isAdmin() || isRemote;
@@ -120,6 +121,8 @@ function renderTools(scene) {
   $('scene-act').value = scene.act;
   $('scene-num').value = scene.scene;
   $('scene-title').value = scene.title;
+  $('act-name').value = actName(scene.act);
+  $('scene-name').value = sceneName(scene.act, scene.scene);
   $('scene-notes-edit').value = scene.notes || '';
   $('scene-up').disabled = i <= 0;
   $('scene-down').disabled = i >= data.scenes.length - 1;
@@ -144,6 +147,66 @@ function renderPosNav() {
   $('pos-count').textContent = `${i + 1}/${sib.length}`;
   $('pos-prev').disabled = i <= 0;
   $('pos-next').disabled = i >= sib.length - 1;
+}
+
+// ---- Vista inmersiva (elenco): plano a pantalla completa con barra superpuesta que se oculta sola ----
+// Se activa con el botón ⛶ (y pide pantalla completa donde el navegador lo permite; iPhone/Safari no) o, por defecto,
+// cuando la web está instalada como app. En modo admin se desactiva siempre.
+const standalone = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone === true;
+let immersive = standalone;
+let hideTimer;
+function wakeBar() {
+  const bar = document.querySelector('.topbar');
+  bar.classList.remove('ui-hidden');
+  clearTimeout(hideTimer);
+  hideTimer = setTimeout(() => {
+    if (document.activeElement && document.activeElement.tagName === 'SELECT') return wakeBar();
+    bar.classList.add('ui-hidden');
+  }, 4000);
+}
+function applyImmersive() {
+  const on = immersive && !isAdmin();
+  document.body.classList.toggle('immersive', on);
+  if (!on) { document.body.classList.remove('notes-open'); document.querySelector('.topbar').classList.remove('ui-hidden'); clearTimeout(hideTimer); hideTimer = undefined; }
+  const btn = $('immersive-btn');
+  btn.hidden = isAdmin();
+  btn.textContent = on ? '✕' : '⛶';
+  btn.setAttribute('aria-label', on ? 'Salir de la vista completa' : 'Pantalla completa');
+  $('notes-btn').hidden = !(on && currentScene().notes);
+  if (on && !hideTimer) wakeBar();
+}
+function initImmersive() {
+  const bar = document.querySelector('.topbar');
+  $('immersive-btn').addEventListener('click', () => {
+    immersive = !immersive;
+    const el = document.documentElement;
+    if (immersive) { try { (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el)?.catch?.(() => {}); } catch { /* no soportado */ } }
+    else if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    hideTimer = undefined;
+    applyImmersive();
+  });
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && immersive && !standalone) { immersive = false; applyImmersive(); }
+  });
+  $('notes-btn').addEventListener('click', () => document.body.classList.toggle('notes-open'));
+  bar.addEventListener('pointerdown', () => { if (document.body.classList.contains('immersive')) wakeBar(); });
+  bar.querySelector('.pickers').addEventListener('change', e => { e.target.blur(); if (document.body.classList.contains('immersive')) wakeBar(); });
+  $('stage').addEventListener('click', e => {
+    if (!document.body.classList.contains('immersive') || e.target.closest('.token')) return;
+    if (bar.classList.contains('ui-hidden')) wakeBar(); else { clearTimeout(hideTimer); bar.classList.add('ui-hidden'); }
+  });
+  // Manifest con el enlace del elenco como start_url: la app instalada abre directamente con acceso (también en iPhone).
+  try {
+    const base = new URL('./', location.href);
+    const start = new URL(base);
+    const v = getViewerToken();
+    if (v) start.searchParams.set('v', v);
+    const icon = n => ({ src: new URL(`icons/icon-${n}.png`, base).href, sizes: `${n}x${n}`, type: 'image/png', purpose: 'any maskable' });
+    const mf = { name: 'Teatro Posiciones', short_name: 'Posiciones', start_url: start.href, scope: base.href,
+      display: 'fullscreen', display_override: ['fullscreen', 'standalone'], background_color: '#0b080e', theme_color: '#7d1424',
+      icons: [icon(192), icon(512)] };
+    document.querySelector('link[rel=manifest]').href = URL.createObjectURL(new Blob([JSON.stringify(mf)], { type: 'application/manifest+json' }));
+  } catch { /* se queda el manifest.json estático */ }
 }
 
 // Gesto de deslizar sobre el escenario (solo modo elenco): izquierda = siguiente, derecha = anterior.
@@ -222,13 +285,16 @@ function newSceneId() {
 }
 
 // Nueva escena (siguiente número del acto actual) o nueva posición dentro de la escena actual.
-function addScene(samePlace = false) {
+// Con copy, la nueva posición duplica los círculos y las notas de la actual y se coloca justo detrás.
+function addScene(samePlace = false, copy = false) {
   const cur = currentScene();
   const inAct = data.scenes.filter(s => s.act === cur.act);
-  const scene = { id: newSceneId(), act: cur.act, notes: '', positions: [],
-    scene: samePlace ? cur.scene : Math.max(...inAct.map(s => s.scene)) + 1 };
+  const scene = { id: newSceneId(), act: cur.act, notes: copy ? cur.notes || '' : '',
+    positions: copy ? structuredClone(cur.positions) : [],
+    scene: samePlace || copy ? cur.scene : Math.max(...inAct.map(s => s.scene)) + 1 };
   scene.title = `Posición ${data.scenes.filter(s => s.act === scene.act && s.scene === scene.scene).length + 1}`;
-  data.scenes.push(scene);
+  if (copy) data.scenes.splice(data.scenes.indexOf(cur) + 1, 0, scene);
+  else data.scenes.push(scene);
   sceneId = scene.id;
   fillScenes();
   persist();
@@ -302,12 +368,16 @@ const POLL_MS = 20000;
 let version;
 // Tres desplegables en cascada: acto → escena → título (cada entrada es una posición).
 const byNum = (a, b) => a - b;
+// Nombres opcionales: se guardan en cada entrada (actName / sceneName) y valen para todas las del mismo acto / acto+escena.
+const actName = a => (data.scenes.find(s => s.act === a && s.actName) || {}).actName || '';
+const sceneName = (a, n) => (data.scenes.find(s => s.act === a && s.scene === n && s.sceneName) || {}).sceneName || '';
+const label = (base, name) => name ? `${base} · ${name}` : base;
 function fillScenes() {
   const cur = currentScene();
   const inAct = data.scenes.filter(s => s.act === cur.act);
   const inScene = inAct.filter(s => s.scene === cur.scene);
-  $('act-select').replaceChildren(...[...new Set(data.scenes.map(s => s.act))].sort(byNum).map(a => new Option(`Acto ${a}`, a)));
-  $('sc-select').replaceChildren(...[...new Set(inAct.map(s => s.scene))].sort(byNum).map(n => new Option(`Escena ${n}`, n)));
+  $('act-select').replaceChildren(...[...new Set(data.scenes.map(s => s.act))].sort(byNum).map(a => new Option(label(`Acto ${a}`, actName(a)), a)));
+  $('sc-select').replaceChildren(...[...new Set(inAct.map(s => s.scene))].sort(byNum).map(n => new Option(label(`Escena ${n}`, sceneName(cur.act, n)), n)));
   $('scene-select').replaceChildren(...inScene.map(s => new Option(s.title, s.id)));
   $('act-select').value = cur.act;
   $('sc-select').value = cur.scene;
@@ -400,9 +470,20 @@ async function start() {
     currentScene().title = e.target.value.trim() || 'Sin título';
     fillScenes(); persist(); renderScene();
   });
+  $('act-name').addEventListener('change', e => {
+    const a = currentScene().act, v = e.target.value.trim();
+    for (const s of data.scenes) if (s.act === a) s.actName = v;
+    persist(); renderScene();
+  });
+  $('scene-name').addEventListener('change', e => {
+    const { act, scene } = currentScene(), v = e.target.value.trim();
+    for (const s of data.scenes) if (s.act === act && s.scene === scene) s.sceneName = v;
+    persist(); renderScene();
+  });
   $('scene-notes-edit').addEventListener('change', e => { currentScene().notes = e.target.value.trim(); persist(); renderScene(); });
   $('scene-new').addEventListener('click', () => addScene(false));
   $('scene-pos').addEventListener('click', () => addScene(true));
+  $('scene-copy').addEventListener('click', () => addScene(true, true));
   $('scene-up').addEventListener('click', () => moveScene(-1));
   $('scene-down').addEventListener('click', () => moveScene(1));
   $('scene-del').addEventListener('click', deleteScene);
@@ -411,6 +492,8 @@ async function start() {
   $('sym-apply').addEventListener('click', applySymmetry);
   $('sym-undo').addEventListener('click', undoSymmetry);
   initSwipe();
+  initImmersive();
+  applyImmersive();
   $('backup-save').addEventListener('click', downloadBackup);
   $('backup-load').addEventListener('click', () => $('backup-file').click());
   $('backup-file').addEventListener('change', e => {

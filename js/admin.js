@@ -11,6 +11,7 @@ let admin = false;
 export const isAdmin = () => admin;
 export const getToken = () => adminToken;             // para escribir
 export const readToken = () => adminToken || viewerToken; // para leer
+export const getViewerToken = () => viewerToken;   // solo para el manifest de la app instalada
 export const canToggle = () => !isRemote || !!adminToken;
 
 // Lee y guarda un token de la URL (lo quita de la barra). Si no hay, usa el recordado.

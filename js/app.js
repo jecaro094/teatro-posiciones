@@ -1,7 +1,7 @@
 // Punto de entrada: carga datos, pinta la escena elegida y gestiona el modo admin.
 import { loadData, saveData, resetData, getVersion, isRemote, AccessError } from './storage.js';
 import { renderStage } from './stage.js';
-import { isAdmin, toggleAdmin, initAdmin, getToken, readToken, getViewerToken, canToggle } from './admin.js';
+import { isAdmin, toggleAdmin, initAdmin, getToken, readToken, canToggle } from './admin.js';
 
 const $ = id => document.getElementById(id);
 let data;
@@ -97,7 +97,6 @@ function renderScene() {
   const scene = data.scenes.find(s => s.id === sceneId);
   renderStage($('stage'), data, sceneId, isAdmin(), () => { persist(); renderCast(); });
   document.body.classList.toggle('admin', isAdmin());
-  applyImmersive();
   $('admin-toggle').textContent = isAdmin() ? 'Salir de admin' : 'Modo admin';
   $('admin-toggle').hidden = !canToggle();
   $('reset').hidden = !isAdmin() || isRemote;
@@ -147,66 +146,6 @@ function renderPosNav() {
   $('pos-count').textContent = `${i + 1}/${sib.length}`;
   $('pos-prev').disabled = i <= 0;
   $('pos-next').disabled = i >= sib.length - 1;
-}
-
-// ---- Vista inmersiva (elenco): plano a pantalla completa con barra superpuesta que se oculta sola ----
-// Se activa con el botón ⛶ (y pide pantalla completa donde el navegador lo permite; iPhone/Safari no) o, por defecto,
-// cuando la web está instalada como app. En modo admin se desactiva siempre.
-const standalone = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone === true;
-let immersive = standalone;
-let hideTimer;
-function wakeBar() {
-  const bar = document.querySelector('.topbar');
-  bar.classList.remove('ui-hidden');
-  clearTimeout(hideTimer);
-  hideTimer = setTimeout(() => {
-    if (document.activeElement && document.activeElement.tagName === 'SELECT') return wakeBar();
-    bar.classList.add('ui-hidden');
-  }, 4000);
-}
-function applyImmersive() {
-  const on = immersive && !isAdmin();
-  document.body.classList.toggle('immersive', on);
-  if (!on) { document.body.classList.remove('notes-open'); document.querySelector('.topbar').classList.remove('ui-hidden'); clearTimeout(hideTimer); hideTimer = undefined; }
-  const btn = $('immersive-btn');
-  btn.hidden = isAdmin();
-  btn.textContent = on ? '✕' : '⛶';
-  btn.setAttribute('aria-label', on ? 'Salir de la vista completa' : 'Pantalla completa');
-  $('notes-btn').hidden = !(on && currentScene().notes);
-  if (on && !hideTimer) wakeBar();
-}
-function initImmersive() {
-  const bar = document.querySelector('.topbar');
-  $('immersive-btn').addEventListener('click', () => {
-    immersive = !immersive;
-    const el = document.documentElement;
-    if (immersive) { try { (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el)?.catch?.(() => {}); } catch { /* no soportado */ } }
-    else if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    hideTimer = undefined;
-    applyImmersive();
-  });
-  document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement && immersive && !standalone) { immersive = false; applyImmersive(); }
-  });
-  $('notes-btn').addEventListener('click', () => document.body.classList.toggle('notes-open'));
-  bar.addEventListener('pointerdown', () => { if (document.body.classList.contains('immersive')) wakeBar(); });
-  bar.querySelector('.pickers').addEventListener('change', e => { e.target.blur(); if (document.body.classList.contains('immersive')) wakeBar(); });
-  $('stage').addEventListener('click', e => {
-    if (!document.body.classList.contains('immersive') || e.target.closest('.token')) return;
-    if (bar.classList.contains('ui-hidden')) wakeBar(); else { clearTimeout(hideTimer); bar.classList.add('ui-hidden'); }
-  });
-  // Manifest con el enlace del elenco como start_url: la app instalada abre directamente con acceso (también en iPhone).
-  try {
-    const base = new URL('./', location.href);
-    const start = new URL(base);
-    const v = getViewerToken();
-    if (v) start.searchParams.set('v', v);
-    const icon = n => ({ src: new URL(`icons/icon-${n}.png`, base).href, sizes: `${n}x${n}`, type: 'image/png', purpose: 'any maskable' });
-    const mf = { name: 'Teatro Posiciones', short_name: 'Posiciones', start_url: start.href, scope: base.href,
-      display: 'fullscreen', display_override: ['fullscreen', 'standalone'], background_color: '#0b080e', theme_color: '#7d1424',
-      icons: [icon(192), icon(512)] };
-    document.querySelector('link[rel=manifest]').href = URL.createObjectURL(new Blob([JSON.stringify(mf)], { type: 'application/manifest+json' }));
-  } catch { /* se queda el manifest.json estático */ }
 }
 
 // Gesto de deslizar sobre el escenario (solo modo elenco): izquierda = siguiente, derecha = anterior.
@@ -492,8 +431,6 @@ async function start() {
   $('sym-apply').addEventListener('click', applySymmetry);
   $('sym-undo').addEventListener('click', undoSymmetry);
   initSwipe();
-  initImmersive();
-  applyImmersive();
   $('backup-save').addEventListener('click', downloadBackup);
   $('backup-load').addEventListener('click', () => $('backup-file').click());
   $('backup-file').addEventListener('change', e => {

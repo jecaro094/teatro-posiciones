@@ -41,6 +41,15 @@
     </div>
     <button id="admin-toggle" type="button" hidden>Modo admin</button>
     <button id="reset" type="button" hidden>Restablecer</button>
+    <div id="pdf-menu">
+      <button id="pdf-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="pdf-list" aria-label="Exportar a PDF" title="Exportar a PDF">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5 12 17l2.5-2.5"/></svg>
+      </button>
+      <div id="pdf-list" role="menu" hidden>
+        <button id="pdf-current" type="button" role="menuitem">PDF · esta posición</button>
+        <button id="pdf-all" type="button" role="menuitem">PDF · toda la obra</button>
+      </div>
+    </div>
   </header>
 
   <main>
@@ -93,10 +102,6 @@
       <span id="sym-msg" role="status"></span>
     </div>
     <section id="cast-list" aria-label="Elenco"></section>
-    <div id="export-tools">
-      <button id="pdf-current" type="button">PDF: esta posición</button>
-      <button id="pdf-all" type="button">PDF: toda la obra</button>
-    </div>
   </main>
   <div id="nav-toast" role="status" aria-live="polite"></div>
   <div id="print-area" aria-hidden="true"></div>

@@ -192,12 +192,25 @@ function stepPosition(delta) {
   const all = navList();
   const cur = currentScene();
   const next = all[all.indexOf(cur) + delta];
-  if (!next) return;
+  if (!next) {
+    // Extremo: o no hay más posiciones, o las que quedan están filtradas («Mi personaje»)
+    const full = ordered();
+    const filtered = full[full.indexOf(cur) + delta];
+    toast(filtered ? (delta > 0 ? 'No hay más posiciones donde sales' : 'No hay posiciones anteriores donde sales')
+      : (delta > 0 ? 'Última posición' : 'Primera posición'));
+    return;
+  }
+  const full = ordered();
+  const skipped = Math.abs(full.indexOf(next) - full.indexOf(cur)) - 1;
   sceneId = next.id;
   renderScene();
-  if (next.act !== cur.act || next.scene !== cur.scene) {
-    toast(`${label(`Acto ${next.act}`, actName(next.act))} · ${label(`Escena ${next.scene}`, sceneName(next.act, next.scene))}`);
-  }
+  // Texto: «Posición n/m» y, si el título es personalizado, «: título» (como en el desplegable); si cambia de escena o acto, delante va «Acto · Escena».
+  const sib = siblings();
+  const counter = `${sib.indexOf(next) + 1}/${sib.length}`;
+  const pos = /^posici[oó]n \d+$/i.test(next.title) ? `Posición ${counter}` : `Posición ${counter}: ${next.title}`;
+  const place = `${label(`Acto ${next.act}`, actName(next.act))} · ${label(`Escena ${next.scene}`, sceneName(next.act, next.scene))}`;
+  const where = next.act !== cur.act || next.scene !== cur.scene ? `${place} · ${pos}` : pos;
+  toast(skipped > 0 ? `${where} · ${skipped === 1 ? '1 saltada' : `${skipped} saltadas`}` : where);
 }
 
 let toastTimer;
@@ -445,7 +458,8 @@ function fillScenes() {
   const inScene = inAct.filter(s => s.scene === cur.scene);
   $('act-select').replaceChildren(...[...new Set(data.scenes.map(s => s.act))].sort(byNum).map(a => new Option(label(`Acto ${a}`, actName(a)), a)));
   $('sc-select').replaceChildren(...[...new Set(inAct.map(s => s.scene))].sort(byNum).map(n => new Option(label(`Escena ${n}`, sceneName(cur.act, n)), n)));
-  $('scene-select').replaceChildren(...inScene.map(s => new Option(s.title, s.id)));
+  // Los títulos por defecto ya empiezan por «Posición N»; si el título es otro, se antepone «Posición N: » para que se entienda.
+  $('scene-select').replaceChildren(...inScene.map((s, i) => new Option(/^posici[oó]n\b/i.test(s.title) ? s.title : `Posición ${i + 1}: ${s.title}`, s.id)));
   $('act-select').value = cur.act;
   $('sc-select').value = cur.scene;
   $('scene-select').value = cur.id;
@@ -564,8 +578,13 @@ async function start() {
   $('sym-undo').addEventListener('click', undoSymmetry);
   initSwipe();
   initFilter();
-  $('pdf-current').addEventListener('click', () => printPlay(false));
-  $('pdf-all').addEventListener('click', () => printPlay(true));
+  const pdfBtn = $('pdf-btn'), pdfList = $('pdf-list');
+  const setPdfMenu = open => { pdfList.hidden = !open; pdfBtn.setAttribute('aria-expanded', String(open)); };
+  pdfBtn.addEventListener('click', () => setPdfMenu(pdfList.hidden));
+  document.addEventListener('pointerdown', e => { if (!pdfList.hidden && !e.target.closest('#pdf-menu')) setPdfMenu(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !pdfList.hidden) { setPdfMenu(false); pdfBtn.focus(); } });
+  $('pdf-current').addEventListener('click', () => { setPdfMenu(false); printPlay(false); });
+  $('pdf-all').addEventListener('click', () => { setPdfMenu(false); printPlay(true); });
   $('backup-save').addEventListener('click', downloadBackup);
   $('backup-load').addEventListener('click', () => $('backup-file').click());
   $('backup-file').addEventListener('change', e => {

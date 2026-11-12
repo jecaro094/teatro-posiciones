@@ -63,7 +63,7 @@ button, select, input { font: inherit; }
 button, select { min-height: 44px; }
 
 /* Cabecera */
-.topbar { display: grid; grid-template-columns: 1fr auto auto; gap: .5rem .5rem; align-items: center;
+.topbar { display: grid; grid-template-columns: 1fr auto auto auto; gap: .5rem .5rem; align-items: center;
   max-width: 72rem; margin: 0 auto; padding: .9rem .5rem .6rem; position: relative; z-index: 1; }
 .topbar h1 { grid-column: 1; margin: 0; font-family: var(--display); font-size: 1.45rem; font-weight: 700; line-height: 1.2;
   letter-spacing: .04em; color: var(--accent); text-shadow: 1px 1px 0 var(--gold); }
@@ -246,15 +246,21 @@ body.admin #scene-notes { display: none; }
   body:not(.admin) { overflow: hidden; background: #000; }
   body:not(.admin)::before, body:not(.admin)::after { display: none; }
   body:not(.admin) .topbar, body:not(.admin) #filter-tools, body:not(.admin) #pos-nav, body:not(.admin) #scene-notes,
-  body:not(.admin) #cast-list, body:not(.admin) #export-tools { display: none; }
+  body:not(.admin) #cast-list { display: none; }
   body:not(.admin) #stage { position: fixed; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; aspect-ratio: auto;
     border: 0; border-radius: 0; box-shadow: none; }
 }
 
 /* Exportar a PDF: botones (en pantalla) y hoja de impresión (A4 apaisado, siempre en claro) */
-#export-tools { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1.1rem; }
-#export-tools button { flex: 1 1 10rem; min-height: 44px; padding: 0 .9rem; border-radius: 10px; border: 1px solid var(--border);
-  background: var(--surface); color: var(--fg); cursor: pointer; font-family: var(--serif); }
+#pdf-menu { position: relative; grid-row: 1; grid-column: 4; }
+#pdf-btn { width: 44px; padding: 0; display: grid; place-items: center; }
+#pdf-btn[aria-expanded="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+#pdf-list { position: absolute; z-index: 20; right: 0; top: calc(100% + .3rem); min-width: 13rem; padding: .3rem;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+#pdf-list[hidden] { display: none; }
+.topbar #pdf-list button { display: block; width: 100%; padding: 0 .8rem; border: 0; border-radius: 8px; text-align: left;
+  background: transparent; color: var(--fg); font-family: var(--serif); font-size: 1rem; }
+.topbar #pdf-list button:hover, .topbar #pdf-list button:focus-visible { background: var(--accent-soft); outline: none; }
 #print-area { display: none; --gold: #a8801f; --accent: #8c1230; --fg: #16111b; --muted: #61566c; --border: #c9bfae;
   --curtain-1: #7d1424; --curtain-2: #4e0b17; --wood-1: #8a6a4a; --wood-2: #7a5c3f; --pit-1: #2b2033; --pit-2: #1d1524; --pit-fg: #e7dcc4;
   --ancentros-bg: #cfe3b0; --ancentros-fg: #1b2412; --addams-bg: #4a1a6b; --addams-fg: #fff; }

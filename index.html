@@ -32,18 +32,16 @@
     <div class="c l"></div><div class="c r"></div>
     <p>Se abre el telón…<small id="splash-slow">Morticia está tardando más de lo normal. Si no carga, recarga la página.</small></p>
   </div>
+  <script>try { if (sessionStorage.getItem('teatro:curtain')) document.getElementById('splash').remove(); } catch (e) { /* sin almacenamiento */ }</script>
   <header class="topbar">
     <h1 id="play-title">Teatro Posiciones</h1>
-    <div class="pickers">
-      <select id="act-select" aria-label="Acto"></select>
-      <select id="sc-select" aria-label="Escena"></select>
-      <select id="scene-select" aria-label="Título de la escena"></select>
-    </div>
+    <button id="save-state" type="button" hidden aria-live="polite">✓ Guardado</button>
     <button id="admin-toggle" type="button" hidden>Modo admin</button>
     <button id="reset" type="button" hidden>Restablecer</button>
     <div id="pdf-menu">
-      <button id="pdf-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="pdf-list" aria-label="Exportar a PDF" title="Exportar a PDF">
+      <button id="pdf-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="pdf-list" title="Exportar a PDF">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5 12 17l2.5-2.5"/></svg>
+        <span>PDF</span>
       </button>
       <div id="pdf-list" role="menu" hidden>
         <button id="pdf-current" type="button" role="menuitem">PDF · esta posición</button>
@@ -54,15 +52,27 @@
 
   <main>
     <p id="admin-help" hidden>Arrastra los círculos para moverlos. Edita número, nombre, personaje y tipo (Ancentros amarillo / Addams morado) en la lista; el botón «En escena/Fuera» la mete o saca de esta escena y ✕ la elimina del elenco.</p>
-    <details id="filter-tools" hidden>
-      <summary><span>Mi personaje</span><span id="filter-sum"></span></summary>
+    <div id="plan-bar">
+      <button id="me-btn" type="button" hidden aria-haspopup="dialog"></button>
+      <button id="names-btn" type="button" aria-pressed="false">Nombres</button>
+      <label id="only-label" hidden><input type="checkbox" id="f-only"> <span id="only-txt"></span></label>
+    </div>
+    <details id="scene-tools" hidden>
+      <summary>Esta posición</summary>
       <div class="tools">
-        <label>¿Quién eres? <select id="f-person"></select></label>
-        <label class="chk"><input type="checkbox" id="f-only" checked> Saltar las posiciones donde no salgo</label>
+        <label>Título <input id="scene-title" type="text" maxlength="80"></label>
+        <label>Notas <textarea id="scene-notes-edit" rows="3" maxlength="1000"></textarea></label>
+        <div class="row">
+          <button type="button" id="scene-pos">+ Posición</button>
+          <button type="button" id="scene-copy">Copiar posición</button>
+          <button type="button" id="scene-up" aria-label="Mover antes">↑</button>
+          <button type="button" id="scene-down" aria-label="Mover después">↓</button>
+          <button type="button" id="scene-del" class="danger">Borrar</button>
+        </div>
       </div>
     </details>
-    <details id="scene-tools" hidden>
-      <summary>Escenas y copias</summary>
+    <details id="work-tools" hidden>
+      <summary>Obra: actos, escenas y copias</summary>
       <div class="tools">
         <div class="nums">
           <label>Acto <input id="scene-act" type="number" min="1" inputmode="numeric"></label>
@@ -72,15 +82,8 @@
           <label>Nombre del acto <input id="act-name" type="text" maxlength="60" placeholder="opcional"></label>
           <label>Nombre de la escena <input id="scene-name" type="text" maxlength="60" placeholder="opcional"></label>
         </div>
-        <label>Título <input id="scene-title" type="text" maxlength="80"></label>
-        <label>Notas <textarea id="scene-notes-edit" rows="3" maxlength="1000"></textarea></label>
         <div class="row">
           <button type="button" id="scene-new">+ Escena</button>
-          <button type="button" id="scene-pos">+ Posición</button>
-          <button type="button" id="scene-copy">Copiar posición</button>
-          <button type="button" id="scene-up" aria-label="Subir escena">↑</button>
-          <button type="button" id="scene-down" aria-label="Bajar escena">↓</button>
-          <button type="button" id="scene-del" class="danger">Borrar</button>
         </div>
         <div class="row">
           <button type="button" id="backup-save">Descargar copia</button>
@@ -90,11 +93,6 @@
       </div>
     </details>
     <section id="stage" aria-label="Plano del escenario"></section>
-    <nav id="pos-nav" aria-label="Posiciones de la escena">
-      <button id="pos-prev" type="button" aria-label="Posición anterior">‹</button>
-      <span id="pos-count" aria-live="polite"></span>
-      <button id="pos-next" type="button" aria-label="Posición siguiente">›</button>
-    </nav>
     <section id="scene-notes" aria-label="Notas de la escena"></section>
     <div id="sym-tools" hidden>
       <button id="sym-apply" type="button">Simetrizar</button>
@@ -103,6 +101,19 @@
     </div>
     <section id="cast-list" aria-label="Elenco"></section>
   </main>
+  <nav id="pos-nav" aria-label="Posiciones de la obra">
+    <button id="pos-prev" class="arrow" type="button" aria-label="Posición anterior">‹</button>
+    <button id="goto-btn" type="button" aria-haspopup="dialog"><span id="goto-place"></span><b id="goto-pos"></b></button>
+    <button id="pos-next" class="arrow" type="button" aria-label="Posición siguiente">›</button>
+  </nav>
+  <dialog id="goto-sheet" class="sheet" aria-labelledby="goto-h">
+    <header><h2 id="goto-h">Ir a…</h2><button type="button" class="sheet-x" aria-label="Cerrar">✕</button></header>
+    <div id="goto-list" class="body"></div>
+  </dialog>
+  <dialog id="me-dialog" class="sheet" aria-labelledby="me-h">
+    <header><h2 id="me-h">¿Quién eres?</h2><button type="button" class="sheet-x" aria-label="Cerrar">✕</button></header>
+    <div class="body"><p class="hint">Tu círculo se resalta en todos los planos. Se recuerda en este dispositivo.</p><div id="me-list"></div></div>
+  </dialog>
   <div id="nav-toast" role="status" aria-live="polite"></div>
   <div id="print-area" aria-hidden="true"></div>
 

@@ -31,12 +31,15 @@ HTML + CSS + JS (módulos ES) sin dependencias ni build. Mobile-first, botones �
 
 ## Interfaz
 - Tema Addams (gótico elegante), claro y oscuro vía variables CSS. Plano: cortinas (fondo), tablado y foso de butacas (público).
-- Admin: círculos arrastrables, elenco editable en tarjetas, panel plegable «Escenas y copias» (título, notas, crear,
-  reordenar, borrar y backups en JSON descargable/restaurable).
+- Navegación: barra fija inferior (‹ · «Acto · Escena / Posición n/m» · ›); tocar el centro abre la hoja «Ir a…» (toda la obra por acto/escena). Deslizar sobre el plano también cambia de posición.
+- Elenco: «¿Quién eres?» se pregunta una vez (`teatro:asked`), resalta tu círculo y tu fila; «Solo donde salgo» está desactivado por defecto. Botón Nombres/Números (`teatro:names`). Tocar una fila localiza su círculo.
+- Los círculos son `<button>` de 44 px. Cortinas de carga solo la primera vez por sesión.
+- Admin: círculos arrastrables (imán al eje central; flechas del teclado mueven 1 %, Mayús 5 %), indicador de guardado con reintento
+  (escrituras serializadas), borrar/mover con «Deshacer» en vez de `confirm()`, errores en toast (no `alert`). Paneles plegables:
+  «Esta posición» (título, notas, +posición, copiar, mover, borrar) y «Obra: actos, escenas y copias» (numeración, nombres, +escena, backups JSON).
 
 ## Pendiente (TODO)
-Duplicar escena, exportar a imagen/PDF, ajustes móviles menores (círculos de 44 px, márgenes seguros iPhone,
-dos columnas en escritorio), prueba manual en navegador/móvil real.
+Exportar a imagen, dos columnas en escritorio, prueba manual en móvil real (los cambios de UX se probaron solo en Chrome de escritorio/headless).
 
 ## Tipos de círculo
 Cada persona del elenco tiene `type`: `ancentros` (amarillo, por defecto si falta) o `addams` (morado). Se edita en modo admin desde la lista del elenco. Colores en `css/styles.css` (`--ancentros-*`, `--addams-*`).

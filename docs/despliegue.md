@@ -34,7 +34,9 @@ Abre el enlace de admin y edita lo que quieras: el primer guardado crea la fila 
 
 ## Uso del modo admin
 - Arrastrar círculos para colocarlos; editar número, nombre, personaje y tipo en la lista del elenco.
-- Panel **Escenas y copias**: cambiar título y notas, crear escena nueva, reordenar (↑/↓) y borrar.
+- Panel **Esta posición**: título, notas, añadir/copiar posición, mover (↑/↓) y borrar (con «Deshacer»).
+- Panel **Obra: actos, escenas y copias**: numeración y nombres de actos/escenas, nueva escena y copias de seguridad.
+- Arrancado el guardado, el indicador de la cabecera muestra «Guardando… / Guardado / Sin guardar · Reintentar».
 - **Copias de seguridad:** «Descargar copia» baja un JSON con todo; «Restaurar copia» lo sube y reemplaza
   los datos (valida la estructura y pide confirmación). La copia contiene los nombres reales:
   guárdala en un sitio privado y no la subas al repo.

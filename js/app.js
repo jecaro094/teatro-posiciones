@@ -1,6 +1,6 @@
 // Punto de entrada: carga datos, pinta la escena elegida y gestiona el modo admin.
 import { loadData, saveData, resetData, getVersion, isRemote, AccessError } from './storage.js';
-import { renderStage, initZoom, setView, fitView, zoomAt, getView } from './stage.js';
+import { renderStage, initZoom, setView, fitView, zoomAt, getView, isCrowded } from './stage.js';
 import { isAdmin, toggleAdmin, initAdmin, getToken, readToken, canToggle } from './admin.js';
 
 const $ = id => document.getElementById(id);
@@ -12,6 +12,7 @@ function renderCast() {
   const onStage = new Set(scene.positions.map(p => p.number));
   const list = $('cast-list');
   list.innerHTML = '';
+  if (!isAdmin()) return renderCastView(list, onStage);
   const ul = document.createElement('ul');
   const mine = hasFilter() ? castOf(filter.p) : null;
   const people = mine ? [mine, ...data.cast.filter(c => c !== mine)] : data.cast;
@@ -37,34 +38,62 @@ function renderCast() {
       li.querySelector('.f-role').addEventListener('change', e => { c.role = e.target.value.trim(); commit(); });
       li.querySelector('.f-num').addEventListener('change', e => renumber(c, e.target.value.trim()));
       li.querySelector('.f-del').addEventListener('click', () => removePerson(c));
-    } else {
-      li.innerHTML = `<span class="num"></span><span class="who"><b></b><small></small></span><em></em>`;
-      li.querySelector('.num').textContent = c.number;
-      li.querySelector('.num').classList.toggle('type-addams', c.type === 'addams');
-      li.querySelector('b').textContent = c.name;
-      li.querySelector('small').textContent = c.role || '';
-      li.querySelector('em').textContent = here ? 'En escena' : 'Fuera';
-      // Tocar una fila que está en escena localiza su círculo en el plano
-      if (here) {
-        li.classList.add('tap');
-        li.tabIndex = 0;
-        li.setAttribute('role', 'button');
-        li.setAttribute('aria-label', `Localizar a ${c.name} en el plano`);
-        const go = () => locate(c.number);
-        li.addEventListener('click', go);
-        li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
-      }
     }
     ul.appendChild(li);
   }
   list.appendChild(ul);
-  if (isAdmin()) {
-    const add = document.createElement('button');
-    add.type = 'button';
-    add.id = 'add-person';
-    add.textContent = '+ Añadir persona';
-    add.addEventListener('click', addPerson);
-    list.appendChild(add);
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.id = 'add-person';
+  add.textContent = '+ Añadir persona';
+  add.addEventListener('click', addPerson);
+  list.appendChild(add);
+}
+
+// Elenco (solo lectura): quién está en esta posición, en dos columnas; los que no están, plegados.
+let offOpen = false;
+function renderCastView(list, onStage) {
+  const mine = hasFilter() ? castOf(filter.p) : null;
+  const row = c => {
+    const here = onStage.has(c.number);
+    const li = document.createElement('li');
+    li.className = here ? 'on' : 'off';
+    if (c === mine) li.classList.add('me');
+    li.innerHTML = `<span class="num"></span><span class="who"><b></b><small></small></span>`;
+    li.querySelector('.num').textContent = c.number;
+    li.querySelector('.num').classList.toggle('type-addams', c.type === 'addams');
+    li.querySelector('b').textContent = c.name;
+    li.querySelector('small').textContent = c === mine && !here ? 'No sales en esta posición' : (c.role || '');
+    // Tocar una fila que está en escena localiza su círculo en el plano
+    if (here) {
+      li.classList.add('tap');
+      li.tabIndex = 0;
+      li.setAttribute('role', 'button');
+      li.setAttribute('aria-label', `Localizar a ${c.name} en el plano`);
+      const go = () => locate(c.number);
+      li.addEventListener('click', go);
+      li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+    }
+    return li;
+  };
+  const on = data.cast.filter(c => onStage.has(c.number) && c !== mine);
+  const off = data.cast.filter(c => !onStage.has(c.number) && c !== mine);
+  const ul = document.createElement('ul');
+  ul.className = 'cols';
+  ul.append(...[...(mine ? [mine] : []), ...on].map(row));
+  list.appendChild(ul);
+  if (off.length) {
+    const det = document.createElement('details');
+    det.className = 'off-list';
+    det.open = offOpen;
+    det.addEventListener('toggle', () => { offOpen = det.open; });
+    const sum = document.createElement('summary');
+    sum.textContent = `Fuera de esta posición (${off.length})`;
+    const ul2 = document.createElement('ul');
+    ul2.className = 'cols';
+    ul2.append(...off.map(row));
+    det.append(sum, ul2);
+    list.appendChild(det);
   }
 }
 
@@ -156,7 +185,13 @@ let lastViewScene;
 function renderScene() {
   const scene = data.scenes.find(s => s.id === sceneId);
   renderStage($('stage'), data, sceneId, isAdmin(), () => { persist(); renderCast(); });
-  if (sceneId !== lastViewScene) { lastViewScene = sceneId; setView($('stage'), { k: 1, tx: 0, ty: 0 }); }
+  if (sceneId !== lastViewScene) {
+    lastViewScene = sceneId;
+    const st = $('stage');
+    setView(st, { k: 1, tx: 0, ty: 0 });
+    // Posiciones apretadas: el plano entra ya encuadrado (en el admin no, para no mover el plano mientras se edita)
+    if (!isAdmin() && isCrowded(st, scene.positions)) fitView(st, scene.positions);
+  }
   document.body.classList.toggle('admin', isAdmin());
   $('admin-toggle').textContent = isAdmin() ? 'Salir de admin' : 'Modo admin';
   $('admin-toggle').hidden = !canToggle();
@@ -195,37 +230,27 @@ function renderTools(scene) {
 // Todas las posiciones de la obra en orden (acto, escena y orden dentro de la escena).
 const ordered = () => [...data.scenes].sort((a, b) => a.act - b.act || a.scene - b.scene);
 
-// ---- «Mi personaje» (no se ofrece al admin): resalta mi círculo y atenúa el resto; opcionalmente salta las posiciones donde no salgo ----
+// ---- «Mi personaje» (no se ofrece al admin): resalta mi círculo y atenúa el resto ----
 const FKEY = 'teatro:filter', ASKED = 'teatro:asked', NAMES = 'teatro:names';
-const filter = { p: '', only: false };
+const filter = { p: '' };
 try {
   const st = JSON.parse(localStorage.getItem(FKEY) || '{}');
   if (typeof st.p === 'string') filter.p = st.p;
-  if (st.v === 2) filter.only = !!st.only; // antes «solo mías» venía activado sin elegirlo
 } catch { /* sin almacenamiento */ }
 const castOf = n => data.cast.find(c => String(c.number) === String(n));
 const hasFilter = () => !isAdmin() && !!filter.p;
 const hasMe = (sc, p) => sc.positions.some(pos => String(pos.number) === p);
-function posMatches(sc) {
-  if (!hasFilter() || !filter.only) return true;
-  return hasMe(sc, filter.p);
-}
-const navList = () => ordered().filter(sc => sc.id === sceneId || posMatches(sc));
+const navList = ordered;
 
 function renderFilter() {
   const adm = isAdmin();
   if (filter.p && !castOf(filter.p)) filter.p = '';
   $('me-btn').hidden = adm;
-  $('only-label').hidden = adm || !filter.p;
   if (!adm) {
     const me = castOf(filter.p);
-    $('me-btn').textContent = me ? `Eres: ${me.number} · ${me.name} ✎` : '¿Quién eres? Elige tu personaje';
+    $('me-btn').textContent = me ? `${me.number} · ${me.name} ✎` : '¿Quién eres? Elige tu personaje';
+    $('me-btn').setAttribute('aria-label', me ? `Eres ${me.name}. Cambiar personaje` : '¿Quién eres? Elige tu personaje');
     $('me-btn').classList.toggle('active', !!me);
-    if (me) {
-      const hidden = ordered().filter(sc => !hasMe(sc, filter.p)).length;
-      $('f-only').checked = filter.only;
-      $('only-txt').textContent = filter.only ? `Solo donde salgo (${hidden} ocultas)` : 'Solo donde salgo';
-    }
   }
   applyFilter();
 }
@@ -245,7 +270,7 @@ function applyFilter() {
   if (el) { if (msg) el.textContent = msg; el.classList.toggle('show', !!msg); }
 }
 function saveFilter() {
-  try { localStorage.setItem(FKEY, JSON.stringify({ ...filter, v: 2 })); } catch { /* ignorar */ }
+  try { localStorage.setItem(FKEY, JSON.stringify({ p: filter.p })); } catch { /* ignorar */ }
   renderFilter(); renderPosNav(); renderCast();
 }
 
@@ -271,7 +296,6 @@ function openMe() {
 
 function initFilter() {
   $('me-btn').addEventListener('click', openMe);
-  $('f-only').addEventListener('change', e => { filter.only = e.target.checked; saveFilter(); });
   $('me-dialog').addEventListener('close', () => { try { localStorage.setItem(ASKED, '1'); } catch { /* ignorar */ } hint(); });
   // Nombres bajo los círculos (se recuerda)
   let names = false;
@@ -280,7 +304,7 @@ function initFilter() {
   $('names-btn').addEventListener('click', () => { names = !names; try { localStorage.setItem(NAMES, names ? '1' : '0'); } catch { /* ignorar */ } paint(); });
   paint();
   let rt;
-  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => setView($('stage'), getView($('stage')), false), 150); });
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => setView($('stage'), getView($('stage')), false, $('stage')._auto), 150); });
 }
 
 // Primera visita: si no ha dicho quién es, se le pregunta una vez.
@@ -303,23 +327,14 @@ function stepPosition(delta) {
   const all = navList();
   const cur = currentScene();
   const next = all[all.indexOf(cur) + delta];
-  if (!next) {
-    // Extremo: o no hay más posiciones, o las que quedan están filtradas («Mi personaje»)
-    const full = ordered();
-    const filtered = full[full.indexOf(cur) + delta];
-    toast(filtered ? (delta > 0 ? 'No hay más posiciones donde sales' : 'No hay posiciones anteriores donde sales')
-      : (delta > 0 ? 'Última posición' : 'Primera posición'));
-    return;
-  }
-  const full = ordered();
-  const skipped = Math.abs(full.indexOf(next) - full.indexOf(cur)) - 1;
+  if (!next) { toast(delta > 0 ? 'Última posición' : 'Primera posición'); return; }
   sceneId = next.id;
   renderScene();
   // Texto: «Posición n/m» y, si el título es personalizado, «: título» (como en el desplegable); si cambia de escena o acto, delante va «Acto · Escena».
   const pos = posText(next);
   const place = `${label(`Acto ${next.act}`, actName(next.act))} · ${label(`Escena ${next.scene}`, sceneName(next.act, next.scene))}`;
   const where = next.act !== cur.act || next.scene !== cur.scene ? `${place} · ${pos}` : pos;
-  toast(skipped > 0 ? `${where} · ${skipped === 1 ? '1 saltada' : `${skipped} saltadas`}` : where);
+  toast(where);
 }
 
 let toastTimer;
@@ -342,9 +357,9 @@ function toast(text, opts = {}) {
 }
 const notify = text => toast(text, { error: true });
 
-// «Posición n/m» entre las posiciones visibles de su escena (con «Solo donde salgo» solo cuentan las mías) y «: título» si es personalizado.
+// «Posición n/m» dentro de su escena y «: título» si es personalizado.
 function posText(s) {
-  const vis = data.scenes.filter(x => x.act === s.act && x.scene === s.scene && (x === s || posMatches(x)));
+  const vis = data.scenes.filter(x => x.act === s.act && x.scene === s.scene);
   const counter = `${vis.indexOf(s) + 1}/${vis.length}`;
   return /^posici[oó]n \d+$/i.test(s.title) ? `Posición ${counter}` : `Posición ${counter}: ${s.title}`;
 }
@@ -453,7 +468,7 @@ function printPlay(all) {
 function initSwipe() {
   const stage = $('stage');
   let start = null;
-  stage.addEventListener('pointerdown', e => { start = isAdmin() || e.pointerType === 'mouse' || !e.isPrimary || getView(stage).k > 1.001 ? null : { x: e.clientX, y: e.clientY }; });
+  stage.addEventListener('pointerdown', e => { start = isAdmin() || e.pointerType === 'mouse' || !e.isPrimary || (getView(stage).k > 1.001 && !stage._auto) ? null : { x: e.clientX, y: e.clientY }; });
   stage.addEventListener('pointercancel', () => { start = null; });
   stage.addEventListener('pointerup', e => {
     if (!start || performance.now() - (stage._gestureAt || 0) < 350) { start = null; return; }
@@ -723,10 +738,12 @@ async function start() {
   const centre = k => zoomAt(stageEl, getView(stageEl).k * k, stageEl.clientWidth / 2, stageEl.clientHeight / 2);
   $('zoom-in').addEventListener('click', () => centre(1.6));
   $('zoom-out').addEventListener('click', () => centre(1 / 1.6));
-  $('zoom-fit').addEventListener('click', () => {
+  const toggleFit = () => {
     if (getView(stageEl).k > 1.001) setView(stageEl, { k: 1, tx: 0, ty: 0 });
     else fitView(stageEl, currentScene().positions);
-  });
+  };
+  $('zoom-fit').addEventListener('click', toggleFit);
+  stageEl.addEventListener('doubletap', toggleFit);
   stageEl.addEventListener('viewchange', e => {
     const k = e.detail.k;
     $('zoom-out').disabled = k <= 1.001;

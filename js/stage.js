@@ -137,15 +137,17 @@ export const MAX_ZOOM = 4;
 export function getView(container) { return container._view || { k: 1, tx: 0, ty: 0 }; }
 
 // Aplica una vista (limitada para no salirse del plano). animate=false durante los gestos.
-export function setView(container, v, animate = true) {
+// auto=true: encuadre automático (no bloquea el desplazamiento de la página ni el deslizar entre posiciones).
+export function setView(container, v, animate = true, auto = false) {
   const w = container.clientWidth, h = container.clientHeight;
   const k = Math.min(MAX_ZOOM, Math.max(1, v.k));
   const tx = Math.min(0, Math.max(w * (1 - k), v.tx)), ty = Math.min(0, Math.max(h * (1 - k), v.ty));
   container._view = { k, tx, ty };
+  container._auto = auto && k > 1.001;
   container.style.setProperty('--k', k);
   container.style.setProperty('--tx', tx + 'px');
   container.style.setProperty('--ty', ty + 'px');
-  container.classList.toggle('zoomed', k > 1.001);
+  container.classList.toggle('zoomed', k > 1.001 && !container._auto);
   container.classList.toggle('zooming', !animate);
   container.dispatchEvent(new CustomEvent('viewchange', { detail: container._view }));
   placeLabels(container);
@@ -161,13 +163,23 @@ export function zoomAt(container, k2, cx, cy, animate = true) {
 export function fitView(container, positions) {
   const w = container.clientWidth, h = container.clientHeight;
   if (!positions.length || !w) return setView(container, { k: 1, tx: 0, ty: 0 });
+
   const xs = positions.map(p => p.x / 100 * w), ys = positions.map(p => p.y / 100 * h);
   const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
   const pad = 46; // medio círculo + aire, en px de pantalla
   const kx = x1 > x0 ? (w - 2 * pad) / (x1 - x0) : MAX_ZOOM, ky = y1 > y0 ? (h - 2 * pad) / (y1 - y0) : MAX_ZOOM;
   const k = Math.min(kx, ky, positions.length > 1 ? MAX_ZOOM : 2.5);
   if (k < 1.25) return setView(container, { k: 1, tx: 0, ty: 0 });
-  setView(container, { k, tx: w / 2 - k * (x0 + x1) / 2, ty: h / 2 - k * (y0 + y1) / 2 });
+  setView(container, { k, tx: w / 2 - k * (x0 + x1) / 2, ty: h / 2 - k * (y0 + y1) / 2 }, true, true);
+}
+
+// ¿Hay círculos que se tocan o solapan a vista completa? (distancia entre centros menor que el círculo + un poco de aire)
+export function isCrowded(container, positions) {
+  const w = container.clientWidth, h = container.clientHeight;
+  for (let i = 0; i < positions.length; i++) for (let j = i + 1; j < positions.length; j++) {
+    if (Math.hypot((positions[i].x - positions[j].x) / 100 * w, (positions[i].y - positions[j].y) / 100 * h) < 50) return true;
+  }
+  return false;
 }
 
 // Gestos: pellizco (2 dedos) y arrastre (con zoom) en táctil; arrastre con ratón; Ctrl/⌘ + rueda (o pellizco del trackpad).
@@ -180,14 +192,16 @@ export function initZoom(container) {
   const stamp = () => { container._gestureAt = performance.now(); };
   const admin = () => document.body.classList.contains('admin');
 
+  let multi = false, start1 = null, lastTap = 0, lastPt = null;
   container.addEventListener('touchstart', e => {
     const ts = [...e.touches].map(pt);
+    if (e.touches.length > 1) multi = true; else start1 = ts[0];
     if (e.touches.length === 2) {
       if (admin() && [...e.touches].some(t => t.target.closest?.('.token'))) { g = null; return; }
       const v = getView(container);
       g = { type: 'pinch', d: dist(ts[0], ts[1]), m: mid(ts[0], ts[1]), v };
       stamp();
-    } else if (e.touches.length === 1 && getView(container).k > 1.001) {
+    } else if (e.touches.length === 1 && getView(container).k > 1.001 && !container._auto) {
       if (admin() && e.target.closest('.token')) { g = null; return; }
       g = { type: 'pan', p: ts[0], v: getView(container), moved: false };
     } else g = null;
@@ -213,6 +227,18 @@ export function initZoom(container) {
   }, { passive: false });
 
   const endTouch = e => {
+    // Doble toque (fuera de los círculos): evento 'doubletap' (encuadrar / vista completa)
+    if (e.type === 'touchend' && e.touches.length === 0 && !multi && start1 && !(g && g.moved) && !e.target.closest('.token')) {
+      const p = pt(e.changedTouches[0]), now = performance.now();
+      if (Math.hypot(p.x - start1.x, p.y - start1.y) < 10) {
+        if (lastPt && now - lastTap < 300 && Math.hypot(p.x - lastPt.x, p.y - lastPt.y) < 30) {
+          lastTap = 0; lastPt = null; stamp();
+          if (e.cancelable) e.preventDefault();
+          container.dispatchEvent(new CustomEvent('doubletap'));
+        } else { lastTap = now; lastPt = p; }
+      }
+    }
+    if (e.touches.length === 0) { multi = false; start1 = null; }
     if (e.touches.length === 0) { if (g) { container.classList.remove('zooming'); } g = null; }
     else if (g?.type === 'pinch') g = null; // al quedar un dedo, no se sigue (evita saltos)
   };
@@ -221,7 +247,7 @@ export function initZoom(container) {
 
   // Ratón: arrastrar para desplazar con zoom (en admin, solo fuera de los círculos)
   container.addEventListener('pointerdown', e => {
-    if (e.pointerType !== 'mouse' || e.button !== 0 || getView(container).k <= 1.001) return;
+    if (e.pointerType !== 'mouse' || e.button !== 0 || getView(container).k <= 1.001 || container._auto) return;
     if (e.target.closest('.token')) return;
     const start = { x: e.clientX, y: e.clientY, v: getView(container) };
     let moved = false;

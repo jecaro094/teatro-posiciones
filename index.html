@@ -92,7 +92,14 @@
         </div>
       </div>
     </details>
-    <section id="stage" aria-label="Plano del escenario"></section>
+    <div id="stage-wrap">
+      <section id="stage" aria-label="Plano del escenario"></section>
+      <div id="zoom-ctl" role="group" aria-label="Zoom del plano">
+        <button id="zoom-in" type="button" aria-label="Acercar">+</button>
+        <button id="zoom-out" type="button" aria-label="Alejar" disabled>−</button>
+        <button id="zoom-fit" type="button" title="Encuadra los círculos de esta posición">Ajustar</button>
+      </div>
+    </div>
     <section id="scene-notes" aria-label="Notas de la escena"></section>
     <div id="sym-tools" hidden>
       <button id="sym-apply" type="button">Simetrizar</button>

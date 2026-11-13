@@ -33,6 +33,7 @@ HTML + CSS + JS (módulos ES) sin dependencias ni build. Mobile-first, botones �
 - Tema Addams (gótico elegante), claro y oscuro vía variables CSS. Plano: cortinas (fondo), tablado y foso de butacas (público).
 - Navegación: barra fija inferior (‹ · «Acto · Escena / Posición n/m» · ›); tocar el centro abre la hoja «Ir a…» (toda la obra por acto/escena). Deslizar sobre el plano también cambia de posición.
 - Elenco: «¿Quién eres?» se pregunta una vez (`teatro:asked`), resalta tu círculo y tu fila; «Solo donde salgo» está desactivado por defecto. Botón Nombres/Números (`teatro:names`). Tocar una fila localiza su círculo.
+- Zoom del plano (×1–×4): pellizco/arrastre en táctil, Ctrl/⌘+rueda en ratón, botones + − y «Ajustar» (encuadra los círculos de la posición). Solo se amplía el fondo (`.bg`); los círculos mantienen su tamaño: `left = --tx + --x·--k` en CSS (`stage.js`). Vuelve a 1× al cambiar de posición; con zoom se desactiva el deslizar entre posiciones. Plano 1:1 en móvil vertical.
 - Los círculos son `<button>` de 44 px. Cortinas de carga solo la primera vez por sesión.
 - Admin: círculos arrastrables (imán al eje central; flechas del teclado mueven 1 %, Mayús 5 %), indicador de guardado con reintento
   (escrituras serializadas), borrar/mover con «Deshacer» en vez de `confirm()`, errores en toast (no `alert`). Paneles plegables:

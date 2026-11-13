@@ -1,6 +1,6 @@
 // Punto de entrada: carga datos, pinta la escena elegida y gestiona el modo admin.
 import { loadData, saveData, resetData, getVersion, isRemote, AccessError } from './storage.js';
-import { renderStage } from './stage.js';
+import { renderStage, initZoom, setView, fitView, zoomAt, getView } from './stage.js';
 import { isAdmin, toggleAdmin, initAdmin, getToken, readToken, canToggle } from './admin.js';
 
 const $ = id => document.getElementById(id);
@@ -73,6 +73,7 @@ function locate(number) {
   const stage = $('stage');
   const tok = stage.querySelector(`.token[data-n="${CSS.escape(String(number))}"]`);
   if (!tok) return;
+  if (getView(stage).k > 1.001) setView(stage, { k: 1, tx: 0, ty: 0 });
   stage.querySelectorAll('.token.show').forEach(t => t.classList.remove('show'));
   tok.classList.add('show', 'pulse');
   setTimeout(() => tok.classList.remove('pulse'), 2000);
@@ -151,9 +152,11 @@ function togglePresence(number) {
   renderScene();
 }
 
+let lastViewScene;
 function renderScene() {
   const scene = data.scenes.find(s => s.id === sceneId);
   renderStage($('stage'), data, sceneId, isAdmin(), () => { persist(); renderCast(); });
+  if (sceneId !== lastViewScene) { lastViewScene = sceneId; setView($('stage'), { k: 1, tx: 0, ty: 0 }); }
   document.body.classList.toggle('admin', isAdmin());
   $('admin-toggle').textContent = isAdmin() ? 'Salir de admin' : 'Modo admin';
   $('admin-toggle').hidden = !canToggle();
@@ -276,6 +279,8 @@ function initFilter() {
   const paint = () => { document.body.classList.toggle('names', names); $('names-btn').setAttribute('aria-pressed', String(names)); $('names-btn').textContent = names ? 'Números' : 'Nombres'; };
   $('names-btn').addEventListener('click', () => { names = !names; try { localStorage.setItem(NAMES, names ? '1' : '0'); } catch { /* ignorar */ } paint(); });
   paint();
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => setView($('stage'), getView($('stage')), false), 150); });
 }
 
 // Primera visita: si no ha dicho quién es, se le pregunta una vez.
@@ -448,10 +453,10 @@ function printPlay(all) {
 function initSwipe() {
   const stage = $('stage');
   let start = null;
-  stage.addEventListener('pointerdown', e => { start = isAdmin() || e.pointerType === 'mouse' ? null : { x: e.clientX, y: e.clientY }; });
+  stage.addEventListener('pointerdown', e => { start = isAdmin() || e.pointerType === 'mouse' || !e.isPrimary || getView(stage).k > 1.001 ? null : { x: e.clientX, y: e.clientY }; });
   stage.addEventListener('pointercancel', () => { start = null; });
   stage.addEventListener('pointerup', e => {
-    if (!start) return;
+    if (!start || performance.now() - (stage._gestureAt || 0) < 350) { start = null; return; }
     const dx = e.clientX - start.x, dy = e.clientY - start.y;
     start = null;
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
@@ -713,6 +718,21 @@ async function start() {
   $('sym-apply').addEventListener('click', applySymmetry);
   $('sym-undo').addEventListener('click', undoSymmetry);
   initSwipe();
+  const stageEl = $('stage');
+  initZoom(stageEl);
+  const centre = k => zoomAt(stageEl, getView(stageEl).k * k, stageEl.clientWidth / 2, stageEl.clientHeight / 2);
+  $('zoom-in').addEventListener('click', () => centre(1.6));
+  $('zoom-out').addEventListener('click', () => centre(1 / 1.6));
+  $('zoom-fit').addEventListener('click', () => {
+    if (getView(stageEl).k > 1.001) setView(stageEl, { k: 1, tx: 0, ty: 0 });
+    else fitView(stageEl, currentScene().positions);
+  });
+  stageEl.addEventListener('viewchange', e => {
+    const k = e.detail.k;
+    $('zoom-out').disabled = k <= 1.001;
+    $('zoom-in').disabled = k >= 3.99;
+    $('zoom-fit').textContent = k > 1.001 ? 'Ver todo' : 'Ajustar';
+  });
   initFilter();
   const pdfBtn = $('pdf-btn'), pdfList = $('pdf-list');
   const setPdfMenu = open => { pdfList.hidden = !open; pdfBtn.setAttribute('aria-expanded', String(open)); };
